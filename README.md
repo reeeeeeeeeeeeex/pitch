@@ -2,6 +2,8 @@
 
 本机运行的人声调音、声音可视化和录音工具。React + TypeScript + Vite + Web Audio + Canvas 2D；无需账号、后端或云端音频服务。
 
+另有独立的 [Android 原生版](android/README.md)：Kotlin / Jetpack Compose，支持 Android 10+、前台录音、本机会话、四类图表和 88 键采样钢琴，与网页互通 `.pitchsession` 文件。构建与安装说明、设备验证记录在 `android/` 中。
+
 ## 开始使用
 
 需要 Node.js 22.12+。此工作区已安装依赖。
