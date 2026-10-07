@@ -138,6 +138,7 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
         }
     }
     @Synchronized fun updateMeta(value: SessionMeta) { meta = value }
+    @Synchronized fun updateDisplay(value: DisplaySettings) { meta = meta.copy(display = value) }
     @Synchronized override fun appendPcm(samples: ShortArray, count: Int): Int {
         check(writable && !closed)
         val accepted = min(count.toLong(), MAX_SAMPLES - meta.samples).toInt()

@@ -20,8 +20,9 @@ class AndroidPcmSource(context: Context, deviceId: Int? = null) : PcmSource {
     @Volatile private var stopping = false
     private var routedId: Int? = null
     init {
-        if (minimum <= 0 || record.state != AudioRecord.STATE_INITIALIZED || record.sampleRate != SAMPLE_RATE) { record.release(); error("设备无法提供 48 kHz 单声道 PCM 输入") }
+        if (minimum <= 0 || record.state != AudioRecord.STATE_INITIALIZED || record.sampleRate != SAMPLE_RATE || record.channelCount != 1 || record.audioFormat != AudioFormat.ENCODING_PCM_16BIT) { record.release(); error("设备无法提供 48 kHz 单声道 PCM 输入") }
         val device = manager.getDevices(AudioManager.GET_DEVICES_INPUTS).firstOrNull { it.id == deviceId }
+        if (deviceId != null && device == null) { record.release(); error("所选麦克风已断开，请重新选择") }
         if (device != null && !record.setPreferredDevice(device)) { record.release(); error("无法选择此麦克风") }
         settings = InputSettings(source = if (source == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "VOICE_RECOGNITION", device = device?.productName?.toString() ?: "系统默认麦克风",
             echoCancellation = if (AcousticEchoCanceler.isAvailable()) disable(AcousticEchoCanceler.create(record.audioSessionId)) else null,

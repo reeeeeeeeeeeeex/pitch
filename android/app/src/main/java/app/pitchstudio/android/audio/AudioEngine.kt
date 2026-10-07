@@ -4,6 +4,7 @@ import android.content.Context
 import app.pitchstudio.core.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 data class EngineState(val active: Boolean = false, val stopping: Boolean = false,
     val session: SessionHandle? = null, val frame: AnalysisFrame? = null, val message: String = "")
@@ -17,7 +18,7 @@ class AudioEngine(private val context: Context, private val repository: SessionR
         val input = testSource ?: AndroidPcmSource(context, deviceId)
         val session = repository.create(recorded, input.settings)
         val run = CapturePipeline(input, session,
-            onFrame = { frame -> mutable.value = mutable.value.copy(frame = frame) },
+            onFrame = { frame -> mutable.update { it.copy(frame = frame) } },
             onFinished = { reason -> mutable.value = EngineState(session = session, frame = session.latest, message = reason) })
         pipeline = run
         try { run.start { mutable.value = EngineState(active = true, session = session) } }
@@ -29,7 +30,7 @@ class AudioEngine(private val context: Context, private val repository: SessionR
     }
     fun stop(reason: String = "") {
         if (mutable.value.active) {
-            mutable.value = mutable.value.copy(stopping = true)
+            mutable.update { it.copy(stopping = true) }
             pipeline?.stop(reason)
         }
     }
