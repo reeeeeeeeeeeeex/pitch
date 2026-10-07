@@ -20,6 +20,7 @@ data class StudioState(
     val display: DisplaySettings = DisplaySettings(), val view: View = View.PITCH,
     val range: TimeRange = TimeRange(0.0, 30.0), val following: Boolean = true,
     val frozen: Boolean = false, val frames: List<HistoryFrame> = emptyList(),
+    val frozenAt: Double? = null,
     val envelope: List<Envelope> = emptyList(), val overview: List<Envelope> = emptyList(),
     val cursor: Double? = null, val playing: Boolean = false,
     val sessions: List<SessionMeta> = emptyList(), val message: String = "",
@@ -77,7 +78,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         displaySave?.cancel()
         pause(); player?.release(); player = null
         cutoff = null; frozenFrame = null; viewStart = 0.0; pitchDragging = false
-        mutable.update { it.copy(busy = true, cursor = null, following = true, frozen = false, message = "", display = it.display.copy(pitchLow = 48, pitchFollowing = true)) }
+        mutable.update { it.copy(busy = true, cursor = null, following = true, frozen = false, frozenAt = null, message = "", display = it.display.copy(pitchLow = 48, pitchFollowing = true)) }
         viewModelScope.launch {
             try { withContext(Dispatchers.IO) {
                 if (!foreground) return@withContext
@@ -95,7 +96,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
     fun freeze() {
         if (state.value.frozen) { cutoff = null; frozenFrame = null }
         else { cutoff = current?.meta?.duration; frozenFrame = current?.latest }
-        mutable.update { it.copy(frozen = !it.frozen) }; cacheKey = ""
+        mutable.update { it.copy(frozen = !it.frozen, frozenAt = cutoff) }; cacheKey = ""
     }
     fun view(view: View) {
         updateDisplay(state.value.display.copy(mobileView = view.name.lowercase(), view = if (view == View.PITCH) state.value.display.view else view.name.lowercase()))
@@ -111,9 +112,13 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
     fun live() { mutable.update { it.copy(following = true) }; cacheKey = "" }
     private fun updateDisplay(display: DisplaySettings) {
         mutable.update { it.copy(display = display) }
-        current?.let { it.updateMeta(it.meta.copy(display = display)) }
+        current?.updateDisplay(display)
         displaySave?.cancel()
-        if (!state.value.active) displaySave = viewModelScope.launch { delay(300); withContext(Dispatchers.IO) { current?.checkpoint() } }
+        if (!state.value.active) displaySave = viewModelScope.launch {
+            delay(300)
+            try { withContext(Dispatchers.IO) { current?.checkpoint() } }
+            catch (e: Exception) { if (e !is CancellationException) message("显示设置保存失败：${e.message}") }
+        }
     }
     private suspend fun refresh() {
         val session = current ?: return
@@ -155,7 +160,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
                 viewStart = 0.0; cutoff = null; frozenFrame = null; cacheKey = ""
                 mutable.value = state.value.copy(meta = loaded.meta, frame = loaded.latest, display = loaded.meta.display,
                     view = View.entries.firstOrNull { it.name.lowercase() == loaded.meta.display.mobileView } ?: View.PITCH,
-                    cursor = null, following = false, frozen = false, busy = false, playing = false, probe = null)
+                    cursor = null, following = false, frozen = false, frozenAt = null, busy = false, playing = false, probe = null)
             } catch (e: Exception) { message("打开失败：${e.message}") }
             finally { mutable.update { it.copy(busy = false) } }
         }
@@ -179,8 +184,18 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun probe(time: Double, hz: Double? = null) {
         val frame = current?.near(time)
-        val text = if (hz != null) "${formatTime(time)} · ${hz.roundToInt()} Hz" else
-            "${formatTime(time)} · " + (frame?.hz?.takeIf { it > 0 }?.let { "${noteName((69 + 12 * log2(it / 440.0)).roundToInt())} · %.1f Hz".format(it) } ?: "无稳定音高")
+        val text = when {
+            hz != null -> {
+                val band = (frequencyRatio(hz) * BANDS).toInt().coerceIn(0, BANDS - 1)
+                val db = frame?.let { (it.spectrum[band].toInt() and 255) / 255.0 * 85 - 100 }
+                "${formatTime(time)} · ${hz.roundToInt()} Hz · " + (db?.let { "%.1f dB".format(it) } ?: "无数据")
+            }
+            state.value.view == View.WAVEFORM -> {
+                val e = current?.envelopeIndex?.visible(TimeRange(max(0.0, time - .01), time + .01), 4)?.minByOrNull { abs(it.time - time) }
+                "${formatTime(time)} · " + (e?.let { "振幅 %.3f — %.3f".format(it.min, it.max) } ?: "无数据")
+            }
+            else -> "${formatTime(time)} · " + (frame?.hz?.takeIf { it > 0 }?.let { "${noteName((69 + 12 * log2(it / 440.0)).roundToInt())} · %.1f Hz".format(it) } ?: "无稳定音高")
+        }
         mutable.update { it.copy(probe = text) }
     }
     fun probeSpectrum(hz: Double) {
@@ -217,7 +232,10 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         mutable.update { it.copy(sessions = repository.list()) }
     }
     fun delete(id: String) = work("删除") {
-        if (current?.meta?.id == id) { pause(); player?.release(); player = null; current?.close(); current = null; mutable.value = StudioState() }
+        withContext(Dispatchers.Main) {
+            displaySave?.cancelAndJoin()
+            if (current?.meta?.id == id) { pause(); player?.release(); player = null; current?.close(); current = null; mutable.value = StudioState(busy = true) }
+        }
         repository.delete(id); mutable.update { it.copy(sessions = repository.list()) }
     }
     private fun work(label: String, block: suspend () -> Unit) {

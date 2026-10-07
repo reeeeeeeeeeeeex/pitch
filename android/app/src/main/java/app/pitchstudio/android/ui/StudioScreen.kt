@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -40,8 +41,14 @@ val Coral = Color(0xffdc6963)
 
 @Composable fun StudioTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = darkColorScheme(primary = Accent, onPrimary = Back,
+        primaryContainer = Color(0xff283724), onPrimaryContainer = Accent,
         background = Back, surface = Color(0xff192019), onBackground = Color(0xffe6ebdf),
-        onSurface = Color(0xffe6ebdf), secondary = Secondary, error = Coral), content = content)
+        onSurface = Color(0xffe6ebdf), secondary = Secondary, error = Coral,
+        secondaryContainer = Color(0xff293327), onSecondaryContainer = Color(0xffdde9d5),
+        surfaceVariant = Color(0xff242d24), onSurfaceVariant = Secondary, surfaceTint = Accent,
+        surfaceContainer = Color(0xff192019), surfaceContainerLow = Color(0xff141b14),
+        surfaceContainerLowest = Color(0xff0b110c), surfaceContainerHigh = Color(0xff212a21),
+        surfaceContainerHighest = Color(0xff2b3429), outline = Color(0xff4a5943), outlineVariant = Color(0xff303b2d)), content = content)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,14 +80,14 @@ val Coral = Color(0xffdc6963)
                 }
             }
             BoxWithConstraints(Modifier.weight(1f)) {
-                val chartHeight = maxOf(420.dp, maxHeight - 320.dp)
+                val chartHeight = maxOf(420.dp * density.fontScale.coerceAtLeast(1f), maxHeight - 320.dp)
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     val pitch = s.frame?.pitch
                     val cents = pitch?.let { p -> s.display.target?.let { (p.midi - it) * 100 } ?: p.cents }
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    FlowRow(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), horizontalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.Center, maxItemsInEachRow = if (density.fontScale > 1.3f) 1 else 2) {
                         Text(pitch?.let { noteName(it.note) } ?: "—", fontSize = 50.sp, fontWeight = FontWeight.Medium, modifier = Modifier.testTag("pitch-note"))
-                        Spacer(Modifier.width(16.dp))
-                        Column {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                             Text(pitch?.let { "%.1f Hz".format(it.hz) } ?: "未检测到稳定音高", color = Secondary, fontSize = 14.sp)
                             Text(cents?.let { "%+.0f 音分".format(it) } ?: "等待声音", color = Accent, fontSize = 14.sp)
                         }
@@ -88,7 +95,7 @@ val Coral = Color(0xffdc6963)
                     TuningScale(cents, s.frame?.rmsDb ?: -160f)
                     Row(Modifier.fillMaxWidth()) {
                         listOf(View.PITCH to "音高", View.SPECTROGRAM to "声谱", View.WAVEFORM to "波形", View.SPECTRUM to "频谱").forEach { (view, title) ->
-                            Column(Modifier.weight(1f).clickable { vm.view(view) }.height(48.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                            Column(Modifier.weight(1f).clickable { vm.view(view) }.heightIn(min = 48.dp).padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                                 Text(title, color = if (s.view == view) Accent else Secondary, fontSize = 15.sp)
                                 Spacer(Modifier.height(12.dp))
                                 Box(Modifier.height(2.dp).width(32.dp).background(if (s.view == view) Accent else Color.Transparent))
@@ -110,13 +117,13 @@ val Coral = Color(0xffdc6963)
                                     else { vm.probe(t, if (current.view == View.SPECTROGRAM) frequencyAt((1 - (p.y - label * 1.2f) / (size.height - label * 3.6f)).toDouble().coerceIn(0.0, 1.0)) else null); vm.seek(t) }
                                 }, onLongPress = { p -> vm.probe(current.range.start + current.range.span * (p.x / size.width).coerceIn(0f, 1f)) })
                             }.pointerInput(s.view) {
-                                var vertical = 0f; var horizontal = 0f; var low = 48; var startTime = 0.0; var direction = 0
-                                detectDragGestures(onDragStart = { vertical = 0f; horizontal = 0f; low = current.display.pitchLow; startTime = current.range.start; direction = 0; vm.pitchDrag(true) },
-                                    onDragEnd = { vm.pitchDrag(false) }, onDragCancel = { vm.pitchDrag(false) }) { change, amount ->
-                                    change.consume(); vertical += amount.y; horizontal += amount.x
-                                    if (direction == 0) direction = if (abs(vertical) > abs(horizontal)) 1 else 2
-                                    if (current.view == View.SPECTRUM) vm.probeSpectrum(frequencyAt((change.position.x / size.width).toDouble().coerceIn(0.0, 1.0)))
-                                    else if (current.view == View.PITCH && direction == 1) vm.setPitchLow(low + (vertical / size.height * 24).roundToInt())
+                                var horizontal = 0f; var startTime = 0.0
+                                detectHorizontalDragGestures(onDragStart = { horizontal = 0f; startTime = current.range.start }) { change, amount ->
+                                    change.consume(); horizontal += amount
+                                    if (current.view == View.SPECTRUM) {
+                                        val label = with(density) { 10.sp.toPx() }
+                                        vm.probeSpectrum(frequencyAt(((change.position.x - label * 3.2f) / (size.width - label * 4.2f)).toDouble().coerceIn(0.0, 1.0)))
+                                    }
                                     else vm.navigate(startTime - horizontal / size.width * current.range.span)
                                 }
                             }
@@ -159,11 +166,11 @@ val Coral = Color(0xffdc6963)
                 Text(formatTime(s.cursor ?: 0.0), fontSize = 12.sp, fontFamily = FontFamily.Monospace)
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (s.active) Button(onClick = vm::stop, enabled = !s.stopping, colors = ButtonDefaults.buttonColors(containerColor = if (s.meta?.recorded == true) Coral else Accent, contentColor = if (s.meta?.recorded == true) Color.White else Back), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                if (s.active) Button(onClick = vm::stop, enabled = !s.stopping, colors = ButtonDefaults.buttonColors(containerColor = if (s.meta?.recorded == true) Coral else Accent, contentColor = if (s.meta?.recorded == true) Color.White else Back), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) {
                     Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(10.dp)); Text(if (s.stopping) "正在保存…" else if (s.meta?.recorded == true) "结束录音" else "结束分析")
                 } else {
-                    OutlinedButton(onClick = { start(false) }, enabled = !s.busy, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("仅分析") }
-                    Button(onClick = { start(true) }, enabled = !s.busy, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("开始录音") }
+                    OutlinedButton(onClick = { start(false) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("仅分析") }
+                    Button(onClick = { start(true) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("开始录音") }
                     if (s.meta != null) IconButton(onClick = { exports = true }, enabled = !s.busy, modifier = Modifier.height(52.dp)) { Icon(Icons.Default.IosShare, "导出") }
                 }
             }
@@ -211,7 +218,7 @@ val Coral = Color(0xffdc6963)
     }
 }
 @Composable private fun PitchScroll(s: StudioState, vm: StudioViewModel) {
-    Canvas(Modifier.width(24.dp).fillMaxHeight().semantics { contentDescription = "音高显示音域" }
+    Canvas(Modifier.width(48.dp).fillMaxHeight().semantics { contentDescription = "音高显示音域" }
         .pointerInput(Unit) { detectDragGestures(onDragStart = { vm.pitchDrag(true) }, onDragEnd = { vm.pitchDrag(false) }, onDragCancel = { vm.pitchDrag(false) }) { change, _ ->
             change.consume(); vm.setPitchLow((84 - change.position.y / size.height * 63).roundToInt())
         } }) {
@@ -222,10 +229,10 @@ val Coral = Color(0xffdc6963)
 }
 @Composable private fun Overview(s: StudioState, vm: StudioViewModel) {
     val latest by rememberUpdatedState(s)
-    Canvas(Modifier.fillMaxWidth().height(44.dp).background(Color(0xff192019), RoundedCornerShape(10.dp)).semantics { contentDescription = "整段波形导航" }
-        .pointerInput(Unit) { detectTapGestures { p -> vm.navigate(p.x / size.width * (latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }
-        .pointerInput(Unit) { detectDragGestures { change, _ -> change.consume(); vm.navigate(change.position.x / size.width * (latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }) {
-        val duration = max(1.0, s.meta?.duration ?: 0.0)
+    Canvas(Modifier.fillMaxWidth().height(48.dp).background(Color(0xff192019), RoundedCornerShape(10.dp)).semantics { contentDescription = "整段波形导航" }
+        .pointerInput(Unit) { detectTapGestures { p -> vm.navigate(p.x / size.width * (latest.frozenAt ?: latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }
+        .pointerInput(Unit) { detectDragGestures { change, _ -> change.consume(); vm.navigate(change.position.x / size.width * (latest.frozenAt ?: latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }) {
+        val duration = max(1.0, s.frozenAt ?: s.meta?.duration ?: 0.0)
         for (e in s.overview) { val x = (e.time / duration * size.width).toFloat(); drawLine(Secondary, Offset(x, size.height / 2 - e.max * size.height * .43f), Offset(x, size.height / 2 - e.min * size.height * .43f), 2f) }
         val start = (s.range.start / duration * size.width).toFloat(); val end = (min(s.range.end, duration) / duration * size.width).toFloat()
         drawRect(Accent.copy(alpha = .08f), Offset(start, 0f), androidx.compose.ui.geometry.Size(max(0f, end - start), size.height))
