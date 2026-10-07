@@ -161,7 +161,12 @@ object ChartRenderer {
             canvas.save(); canvas.translate(0f, 90f); draw(canvas, 1600f, 560f, View.PITCH, snapshot, 18f); canvas.restore()
             canvas.save(); canvas.translate(0f, 700f); draw(canvas, 1600f, 460f, analysis, snapshot, 18f); canvas.restore()
             if (analysis == View.SPECTROGRAM) colorScale(canvas, 60f, 1170f, 500f, 18f)
-            canvas.drawText(if (analysis == View.SPECTRUM) "瞬时频谱 · 横轴 Hz · 纵轴 dB" else "时间 mm:ss · 空缺表示没有分析数据", 690f, 1205f, p)
+            val units = when (analysis) {
+                View.SPECTRUM -> "瞬时频谱 · 横轴 Hz · 纵轴 dB"
+                View.SPECTROGRAM -> "横轴 mm:ss · 纵轴 Hz · 空缺表示没有分析数据"
+                else -> "横轴 mm:ss · 纵轴振幅（−1 至 1）"
+            }
+            canvas.drawText(units, 690f, 1205f, p)
             context.contentResolver.openOutputStream(uri, "wt")!!.use { require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)); it.flush() }
         } finally { bitmap.recycle() }
     }
