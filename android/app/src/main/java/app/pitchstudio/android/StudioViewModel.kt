@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.pitchstudio.android.audio.AudioEngine
+import app.pitchstudio.android.audio.PianoEngine
 import app.pitchstudio.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -28,6 +29,7 @@ data class StudioState(
 class StudioViewModel(application: Application) : AndroidViewModel(application) {
     val repository = SessionRepository(File(application.filesDir, "sessions"))
     val engine = AudioEngine(application, repository)
+    val piano = PianoEngine(application)
     private val mutable = MutableStateFlow(StudioState(sessions = repository.list()))
     val state = mutable.asStateFlow()
     private var current: SessionHandle? = null
@@ -88,7 +90,8 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun stop() = engine.stop()
     fun foreground() { foreground = true }
-    fun background() { foreground = false; if (state.value.active) engine.stop("已离开前台，录音和分析已保留"); pause() }
+    fun background() { foreground = false; if (state.value.active) engine.stop("已离开前台，录音和分析已保留"); pause(); piano.stopAll() }
+    fun playPiano(note: Int) { target(note); piano.play(note, ::message) }
     fun freeze() {
         if (state.value.frozen) { cutoff = null; frozenFrame = null }
         else { cutoff = current?.meta?.duration; frozenFrame = current?.latest }
@@ -227,7 +230,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     override fun onCleared() {
-        engine.stop("应用已关闭，采集已结束"); player?.release()
+        engine.stop("应用已关闭，采集已结束"); player?.release(); piano.close()
         Thread { engine.awaitStopped(10000); current?.close() }.start()
     }
 }

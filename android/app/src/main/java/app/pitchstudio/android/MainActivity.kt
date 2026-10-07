@@ -11,6 +11,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.pitchstudio.android.ui.*
 import kotlinx.coroutines.launch
 
@@ -39,7 +40,7 @@ class MainActivity : ComponentActivity() {
         }, importFile = { open.launch(arrayOf("application/octet-stream", "*/*")) }, export = { kind, whole ->
             val name = "pitch-${System.currentTimeMillis()}"
             when (kind) { "wav" -> wav.launch("$name.wav"); "session" -> session.launch("$name.pitchsession"); "png" -> { wholeImage = whole; png.launch("$name.png") } }
-        }) } }
+        }, piano = { PianoReference(studio.state.collectAsStateWithLifecycle().value, studio::playPiano, { studio.target(null) }) }) } }
     }
     override fun onStart() { super.onStart(); studio.foreground() }
     override fun onStop() { super.onStop(); if (!isChangingConfigurations) studio.background() }

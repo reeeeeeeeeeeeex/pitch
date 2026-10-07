@@ -19,6 +19,12 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
+val preparePianoAssets by tasks.registering(Sync::class) {
+    from(rootProject.file("../public/piano")) { into("piano") }
+    into(layout.buildDirectory.dir("generated/pianoAssets"))
+}
+android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/pianoAssets"))
+tasks.named("preBuild").configure { dependsOn(preparePianoAssets) }
 dependencies {
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.12.00"))
