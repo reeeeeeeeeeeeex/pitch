@@ -69,6 +69,8 @@ export default function App() {
   const [deviceId, setDeviceId] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [playbackError, setPlaybackError] = useState('');
+  const [pianoLoading, setPianoLoading] = useState(false);
+  const pianoRequest = useRef(0);
   const [windowSeconds, setWindowSeconds] = useState(30);
   const [following, setFollowing] = useState(true);
   const [viewStart, setViewStart] = useState(0);
@@ -219,11 +221,21 @@ export default function App() {
 
   const playNote = useCallback(
     (midi: number) => {
+      const request = ++pianoRequest.current;
       setTarget(midi);
       setPlaybackError('');
+      setPianoLoading(true);
       void piano
         .play(midi)
-        .catch(() => setPlaybackError('参考音无法播放。请检查浏览器的声音权限后重试。'));
+        .catch(() => {
+          if (request === pianoRequest.current)
+            setPlaybackError(
+              '钢琴音色加载或播放失败，请检查连接与浏览器声音权限，再点击琴键重试。',
+            );
+        })
+        .finally(() => {
+          if (request === pianoRequest.current) setPianoLoading(false);
+        });
     },
     [piano],
   );
@@ -828,6 +840,7 @@ export default function App() {
         <Piano
           target={target}
           detected={currentPitch?.midi ?? null}
+          loading={pianoLoading}
           onPlay={playNote}
           onClear={clearTarget}
         />

@@ -105,6 +105,10 @@ describe('binary session', () => {
     await expect(decodeSession(change('duration', 1801))).rejects.toThrow();
     await expect(decodeSession(change('sampleRate', 44100))).rejects.toThrow();
   });
+  it.each([21, 108])('roundtrips the expanded piano target %s', async (target) => {
+    const blob = encodeSession(await fixture(), { ...DEFAULT_DISPLAY, target });
+    expect((await decodeSession(blob)).display.target).toBe(target);
+  });
   it('validates historical time ordering and envelope values', () => {
     const history = new HistoryStore();
     history.append(frame(1));

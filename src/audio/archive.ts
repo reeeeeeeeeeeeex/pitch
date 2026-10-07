@@ -1,3 +1,4 @@
+import { PIANO_FIRST, PIANO_LAST } from './piano-notes';
 import { describePitch, FFT_SIZE, PITCH_SIZE } from './analysis';
 import {
   HistoryStore,
@@ -184,7 +185,7 @@ export async function decodeSession(
     windowSeconds: [0, 10, 30, 60, 300].includes(Number(d.windowSeconds))
       ? Number(d.windowSeconds)
       : 30,
-    target: d.target === null ? null : number(d.target, 36, 96),
+    target: d.target === null ? null : number(d.target, PIANO_FIRST, PIANO_LAST),
     milliseconds: [5, 10, 20, 50].includes(Number(d.milliseconds)) ? Number(d.milliseconds) : 20,
     gain: [1, 2, 4, 8].includes(Number(d.gain)) ? Number(d.gain) : 1,
   };

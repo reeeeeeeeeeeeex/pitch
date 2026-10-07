@@ -13,7 +13,9 @@ test('idle workspace is honest, responsive, and keyboard accessible', async ({
   await expect(page.getByRole('heading', { level: 1 })).toContainText('听见声音');
   await expect(page.getByTestId('pitch-note')).toHaveText('—');
   await expect(page.getByRole('button', { name: '冻结画面' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: /^试听 / })).toHaveCount(61);
+  await expect(page.getByRole('button', { name: /^试听 / })).toHaveCount(88);
+  await expect(page.locator('.piano-key.white')).toHaveCount(52);
+  await expect(page.locator('.piano-key.black')).toHaveCount(36);
   await page.screenshot({ path: testInfo.outputPath('desktop-idle.png'), fullPage: true });
   await page.getByRole('tab', { name: '频谱图' }).focus();
   await page.keyboard.press('ArrowRight');

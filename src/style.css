@@ -836,7 +836,7 @@ h1 > span {
 .piano-keyboard {
   height: 113px;
   position: relative;
-  min-width: 830px;
+  min-width: 1196px;
 }
 .white-keys {
   height: 100%;
@@ -926,6 +926,7 @@ h1 > span {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
   color: #7e8b72;
   font-size: 9px;
 }
@@ -933,6 +934,23 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.piano-sound {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 0 0 14px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #9ca591;
+}
+.piano-sound a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.piano-sound a:hover {
+  color: var(--accent);
 }
 .bottom-row {
   display: flex;
@@ -1145,9 +1163,6 @@ h1 > span {
   }
   .chart-wrap {
     height: 270px;
-  }
-  .piano-footer > span:last-child {
-    display: none;
   }
   .site-footer > span:last-child {
     font-size: 9px;
@@ -1419,7 +1434,7 @@ h1 > span {
   }
   .piano-keyboard {
     height: 105px;
-    min-width: 830px;
+    min-width: 1196px;
   }
   .piano-footer {
     font-size: 8px;
