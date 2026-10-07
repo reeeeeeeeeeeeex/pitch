@@ -1,0 +1,5 @@
+
+Algorithm : SHA256
+Hash      : 7F5D75173089EF56B3F806BF38993F84F7E8EBDAF7EA573BB0C4F7845292A887
+Path      : C:\Users\36053\Desktop\pitch\.local\android-release\pitch-studio-1.0.0-debug.apk
+

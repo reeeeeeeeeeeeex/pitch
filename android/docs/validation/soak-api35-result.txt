@@ -1,0 +1,7 @@
+PASS
+elapsedMs=1801934
+samples=86400000
+wavBytes=172800044
+historyBytes=23999936
+wavSha256=934279c462c7bd7c334698eaecffef2e21639171b3ea29ed731e71b1b119eb22
+source=instrumentation-paced-PCM

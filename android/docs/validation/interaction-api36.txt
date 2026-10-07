@@ -1,0 +1,12 @@
+
+app.pitchstudio.android.StudioTest:...
+app.pitchstudio.android.PianoTest:.
+app.pitchstudio.android.LayoutTest:.
+app.pitchstudio.android.LifecycleTest:.
+app.pitchstudio.android.DocumentPickerTest:.
+
+Time: 71.79
+
+OK (7 tests)
+
+

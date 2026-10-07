@@ -1,0 +1,70 @@
+{
+  "result": "PASS",
+  "duration": 1800,
+  "samples": 86400000,
+  "historyFrames": 44776,
+  "lastFrameTime": 1800,
+  "wavSha256": "934279c462c7bd7c334698eaecffef2e21639171b3ea29ed731e71b1b119eb22",
+  "checks": [
+    {
+      "time": 5,
+      "expected": 220,
+      "wavHz": 219.99982101466784,
+      "historyHz": 220.0001983642578
+    },
+    {
+      "time": 45,
+      "expected": 110,
+      "wavHz": 109.99994727474453,
+      "historyHz": 110.00001525878906
+    },
+    {
+      "time": 75,
+      "expected": 220,
+      "wavHz": 219.99982101466784,
+      "historyHz": 220.0001983642578
+    },
+    {
+      "time": 105,
+      "expected": 440,
+      "wavHz": 439.99955754977543,
+      "historyHz": 440.00067138671875
+    },
+    {
+      "time": 135,
+      "expected": 880,
+      "wavHz": 879.9938567975355,
+      "historyHz": 879.9943237304688
+    },
+    {
+      "time": 165,
+      "expected": 110,
+      "wavHz": 109.99994727474453,
+      "historyHz": 110.00001525878906
+    },
+    {
+      "time": 190,
+      "expected": null,
+      "wavHz": null,
+      "historyHz": 0
+    },
+    {
+      "time": 225,
+      "expected": 440,
+      "wavHz": 439.99955754977543,
+      "historyHz": 440.00067138671875
+    },
+    {
+      "time": 490,
+      "expected": null,
+      "wavHz": null,
+      "historyHz": 0
+    },
+    {
+      "time": 1785,
+      "expected": 440,
+      "wavHz": 439.99955754977543,
+      "historyHz": 440.00067138671875
+    }
+  ]
+}

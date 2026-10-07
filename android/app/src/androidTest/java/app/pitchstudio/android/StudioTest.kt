@@ -27,9 +27,12 @@ class StudioTest {
 
     @Test fun livePitchFreezeNavigationPlaybackAndPng() {
         compose.onNodeWithText("声见", useUnmergedTree = true).assertDoesNotExist()
+        until { !vm.state.value.busy }
         val source = SyntheticSource()
         compose.runOnUiThread { vm.engine.start(true, testSource = source) }
         until { vm.state.value.frame?.pitch?.note == 57 }
+        val expectedId = vm.engine.state.value.session!!.meta.id
+        assertEquals(expectedId, vm.state.value.meta!!.id)
         assertEquals(57, vm.state.value.frame!!.pitch!!.note)
         compose.runOnUiThread { vm.setPitchLow(21) }
         until { vm.state.value.display.pitchLow > 21 }
@@ -46,10 +49,11 @@ class StudioTest {
         compose.runOnUiThread { vm.stop() }
         until { !vm.state.value.active && vm.state.value.meta?.complete == true }
         val saved = vm.state.value.meta!!
+        assertEquals(expectedId, saved.id)
         assertTrue(saved.samples > 0)
         compose.runOnUiThread { vm.setPitchLow(48); vm.play() }
         until { vm.state.value.playing }
-        Thread.sleep(200); assertEquals(48, vm.state.value.display.pitchLow)
+        Thread.sleep(200); assertEquals("active=${vm.state.value.active}, busy=${vm.state.value.busy}, display=${vm.state.value.display}, session=${vm.state.value.meta?.id}, expected=$expectedId", 48, vm.state.value.display.pitchLow)
         compose.runOnUiThread { vm.pause(); vm.seek(saved.duration / 2) }
         val image = File(compose.activity.cacheDir, "visible.png")
         compose.runOnUiThread { vm.exportImage(Uri.fromFile(image), false) }
@@ -61,6 +65,7 @@ class StudioTest {
         compose.onRoot().captureToImage().asAndroidBitmap().let { bitmap -> File(output, "main.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
     }
     @Test fun leavingForegroundEndsAndPersistsCapture() {
+        until { !vm.state.value.busy }
         val source = SyntheticSource()
         compose.runOnUiThread { vm.engine.start(true, testSource = source) }
         until { vm.state.value.frame != null }
@@ -76,6 +81,7 @@ class StudioTest {
     }
     @Test fun actualAudioRecordCapturesAndReleases() {
         repeat(2) {
+            until { !vm.state.value.busy }
             compose.runOnUiThread { vm.start(true) }
             until { vm.state.value.active || vm.state.value.message.isNotEmpty() }
             assertTrue(vm.state.value.message, vm.state.value.active)
@@ -84,5 +90,21 @@ class StudioTest {
             until { !vm.state.value.active && vm.state.value.meta?.complete == true }
             assertEquals(48000, vm.state.value.meta!!.settings.sampleRate)
         }
+    }
+    @Test fun pendingSessionRestoreBlocksCaptureStart() {
+        until { !vm.state.value.busy }
+        val id = vm.repository.list().maxByOrNull { it.samples }?.id ?: run {
+            vm.repository.create(false, InputSettings()).use {
+                it.appendPcm(ShortArray(4800)); it.finish(); it.meta.id
+            }
+        }
+        compose.runOnUiThread {
+            vm.load(id)
+            assertTrue(vm.state.value.busy)
+            vm.start(true)
+            assertFalse(vm.engine.state.value.active)
+        }
+        until { !vm.state.value.busy && vm.state.value.meta?.id == id }
+        assertFalse(vm.state.value.active)
     }
 }
