@@ -10,7 +10,7 @@ test('idle workspace is honest, responsive, and keyboard accessible', async ({
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('听见声音');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('声见');
   await expect(page.getByTestId('pitch-note')).toHaveText('—');
   await expect(page.getByRole('button', { name: '冻结画面' })).toBeDisabled();
   await expect(page.getByRole('button', { name: /^试听 / })).toHaveCount(88);

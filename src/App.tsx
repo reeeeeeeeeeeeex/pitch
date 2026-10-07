@@ -277,7 +277,7 @@ export default function App() {
           <span className="brand-mark">
             <Activity size={23} strokeWidth={1.7} />
           </span>
-          <strong>声见</strong>
+          <h1>声见</h1>
           <span className="brand-divider" />
           <span className="brand-en">PITCH STUDIO</span>
         </a>
@@ -298,19 +298,6 @@ export default function App() {
       </header>
 
       <main>
-        <div className="workspace-heading">
-          <div>
-            <div className="eyebrow">YOUR VOICE, IN DETAIL</div>
-            <h1>
-              听见声音，也看见声音<span>。</span>
-            </h1>
-            <p>从一个音高，到每一次振动。探索你声音里的细节。</p>
-          </div>
-          <div className="workspace-index">
-            <span>声 音 实 验 室</span>
-            <span>01 / LIVE ANALYSIS</span>
-          </div>
-        </div>
         {showHelp && (
           <aside className="help-panel">
             <div>
@@ -885,12 +872,6 @@ export default function App() {
           </details>
         </div>
       </main>
-      <footer className="site-footer">
-        <span>
-          声见 <span className="footer-slash">/</span> Pitch Studio
-        </span>
-        <span>给每一个声音，多一种看见的方式。</span>
-      </footer>
     </div>
   );
 }
