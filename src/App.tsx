@@ -23,6 +23,14 @@ import { Piano } from './components/Piano';
 import { TimeChart, Navigator, saveImage } from './components/Timeline';
 import { formatTime, timeWindow, type SavedDisplay } from './audio/history';
 import { encodeSession, decodeSession, downloadBlob } from './audio/archive';
+import {
+  clampPitchLow,
+  DEFAULT_PITCH_LOW,
+  followPitchLow,
+  PITCH_SPAN,
+  PITCH_MIN_LOW,
+  PITCH_MAX_LOW,
+} from './audio/pitch-viewport';
 
 const VIEWS = [
   {
@@ -70,6 +78,9 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [playbackError, setPlaybackError] = useState('');
   const [pianoLoading, setPianoLoading] = useState(false);
+  const [pitchLow, setPitchLow] = useState(DEFAULT_PITCH_LOW);
+  const [pitchFollowing, setPitchFollowing] = useState(true);
+  const [pitchDragging, setPitchDragging] = useState(false);
   const pianoRequest = useRef(0);
   const [windowSeconds, setWindowSeconds] = useState(30);
   const [following, setFollowing] = useState(true);
@@ -91,7 +102,36 @@ export default function App() {
     target,
     milliseconds,
     gain,
+    pitchLow,
+    pitchFollowing,
   };
+  const pitchFrame = data.history.latestPitch(
+    range.start,
+    Math.min(
+      range.end,
+      frozen?.endTime ?? data.duration,
+      cursor !== null && cursor >= range.start && cursor <= range.end ? cursor : Infinity,
+    ),
+  );
+  const pitchGuide = pitchFrame?.hz ? 69 + 12 * Math.log2(pitchFrame.hz / 440) : target;
+  const livePitch = snapshot.status === 'running' ? snapshot.frame?.pitch : null;
+  const livePitchTime = snapshot.frame?.time;
+  const livePitchHz = livePitch?.hz;
+  useEffect(() => {
+    if (!livePitchHz || frozen || pitchDragging) return;
+    // Every new voiced frame resumes live tracking, including an unchanged note.
+    // A drag only holds the range until the user releases it.
+    setPitchFollowing(true);
+    setPitchLow((low) => followPitchLow(low, 69 + 12 * Math.log2(livePitchHz / 440)));
+  }, [livePitchHz, livePitchTime, frozen, pitchDragging]);
+  useEffect(() => {
+    if (snapshot.status !== 'running' && pitchFollowing && !pitchDragging && !frozen)
+      setPitchLow((low) => followPitchLow(low, pitchGuide));
+  }, [snapshot.status, pitchFollowing, pitchGuide, pitchLow, pitchDragging, frozen]);
+  const panPitch = useCallback((low: number) => {
+    setPitchFollowing(false);
+    setPitchLow(clampPitchLow(low));
+  }, []);
   const navigate = (start: number) => {
     setFollowing(false);
     setViewStart(Math.max(0, start));
@@ -142,6 +182,8 @@ export default function App() {
         setWindowSeconds(imported.display.windowSeconds);
         setMilliseconds(imported.display.milliseconds);
         setGain(imported.display.gain);
+        setPitchLow(imported.display.pitchLow ?? DEFAULT_PITCH_LOW);
+        setPitchFollowing(imported.display.pitchFollowing ?? true);
         setFrozen(null);
         setFollowing(false);
         setViewStart(0);
@@ -167,6 +209,7 @@ export default function App() {
         imageScope === 'whole' && view !== 'spectrum'
           ? data.duration
           : (frozen?.endTime ?? data.duration),
+        pitchLow,
       );
     } catch {
       setFileError('图像保存失败，请重试。');
@@ -248,6 +291,8 @@ export default function App() {
       setFollowing(true);
       setViewStart(0);
       setFileError('');
+      setPitchFollowing(true);
+      setPitchLow(DEFAULT_PITCH_LOW);
       void session.start(deviceId, record);
     });
   const toggleFreeze = () => {
@@ -597,16 +642,60 @@ export default function App() {
                 {frozen ? ' · 已冻结' : ''}
               </span>
             </div>
-            <TimeChart
-              data={data}
-              range={range}
-              kind="pitch"
-              target={target}
-              cursor={cursor}
-              revision={frozen ? 0 : snapshot.revision}
-              cutoff={frozen?.endTime ?? data.duration}
-              onSeek={seek}
-            />
+            <div className="pitch-controls">
+              <span className="pitch-range" role="status">
+                {noteName(pitchLow)} — {noteName(pitchLow + PITCH_SPAN)} · 两个八度
+              </span>
+            </div>
+            <div className="pitch-viewport">
+              <TimeChart
+                data={data}
+                range={range}
+                kind="pitch"
+                target={target}
+                cursor={cursor}
+                revision={frozen ? 0 : snapshot.revision}
+                cutoff={frozen?.endTime ?? data.duration}
+                onSeek={seek}
+                pitchLow={pitchLow}
+                onPitchPan={panPitch}
+                onPitchDragChange={setPitchDragging}
+              />
+              <div className="pitch-scrollbar">
+                <button
+                  aria-label="音域升高一个半音"
+                  title="音域升高一个半音"
+                  disabled={pitchLow === PITCH_MAX_LOW}
+                  onClick={() => panPitch(pitchLow + 1)}
+                >
+                  ↑
+                </button>
+                <input
+                  type="range"
+                  aria-label="音高显示音域"
+                  aria-orientation="vertical"
+                  aria-valuetext={`${noteName(pitchLow)} 至 ${noteName(pitchLow + PITCH_SPAN)}`}
+                  min={PITCH_MIN_LOW}
+                  max={PITCH_MAX_LOW}
+                  step={1}
+                  value={pitchLow}
+                  onChange={(event) => panPitch(Number(event.target.value))}
+                  onPointerDown={() => setPitchDragging(true)}
+                  onPointerUp={() => setPitchDragging(false)}
+                  onPointerCancel={() => setPitchDragging(false)}
+                  onLostPointerCapture={() => setPitchDragging(false)}
+                />
+                <button
+                  aria-label="音域降低一个半音"
+                  title="音域降低一个半音"
+                  disabled={pitchLow === PITCH_MIN_LOW}
+                  onClick={() => panPitch(pitchLow - 1)}
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+            <p className="pitch-hint">实时随声音移动 · 回放时可上下拖动调整音域，点击曲线定位</p>
           </div>
         </section>
 

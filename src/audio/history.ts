@@ -57,7 +57,9 @@ export class HistoryStore {
   private bandsForRate = 0;
   private ranges: [number, number][] = [];
   private pitchSegments: number[] = [];
+  private voicedIndices: number[] = [];
   private indexSegment(index: number, hz: number, time: number) {
+    if (hz) this.voicedIndices.push(index);
     const previous = index ? this.get(index - 1) : null;
     if (hz && (!previous?.hz || time - previous.time > 0.15)) this.pitchSegments.push(index);
   }
@@ -84,6 +86,17 @@ export class HistoryStore {
       else high = mid;
     }
     return low;
+  }
+  latestPitch(start: number, end: number): HistoryFrame | null {
+    let low = 0,
+      high = this.voicedIndices.length;
+    while (low < high) {
+      const mid = (low + high) >>> 1;
+      if (this.get(this.voicedIndices[mid]).time <= end) low = mid + 1;
+      else high = mid;
+    }
+    const frame = low ? this.get(this.voicedIndices[low - 1]) : null;
+    return frame && frame.time >= start ? frame : null;
   }
   near(time: number, cutoff = Infinity): HistoryFrame | null {
     if (time > cutoff) return null;
@@ -282,6 +295,8 @@ export interface SavedDisplay {
   target: number | null;
   milliseconds: number;
   gain: number;
+  pitchLow?: number;
+  pitchFollowing?: boolean;
 }
 export interface SessionData {
   name: string;

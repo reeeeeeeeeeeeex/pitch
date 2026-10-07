@@ -1,7 +1,13 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { frequencyAt, frequencyRatio, noteName } from '../audio/analysis';
 import { formatTime, type SessionData, type TimeRange } from '../audio/history';
 import { downloadBlob } from '../audio/archive';
+import {
+  DEFAULT_PITCH_LOW,
+  PITCH_SPAN,
+  PITCH_CHART_HEIGHT,
+  followPitchLow,
+} from '../audio/pitch-viewport';
 export type TimePlot = 'pitch' | 'spectrogram' | 'waveform';
 const LEFT = 62,
   RIGHT = 24,
@@ -30,6 +36,7 @@ export function drawTimePlot(
   target: number | null,
   cursor: number | null,
   cutoff = data.duration,
+  pitchLow = DEFAULT_PITCH_LOW,
 ) {
   ctx.save();
   ctx.fillStyle = '#161c18';
@@ -78,29 +85,20 @@ export function drawTimePlot(
     }
     ctx.fillText('Hz', LEFT - 8, 13);
   } else if (kind === 'pitch') {
-    let low = target ?? 60,
-      high = target ?? 72;
+    const low = pitchLow,
+      high = low + PITCH_SPAN;
     const frames = Array.from(
       data.history.visible({ start: range.start, end: Math.min(range.end, cutoff) }, w * 2),
     );
-    for (const f of frames)
-      if (f.hz) {
-        const midi = 69 + 12 * Math.log2(f.hz / 440);
-        low = Math.min(low, midi - 1);
-        high = Math.max(high, midi + 1);
-      }
-    const middle = (low + high) / 2;
-    low = Math.floor(Math.min(low, middle - 3));
-    high = Math.ceil(Math.max(high, middle + 3));
     const y = (midi: number) => TOP + ((high - midi) / (high - low)) * h;
-    const step = Math.max(1, Math.ceil((high - low) / 6));
-    ctx.fillStyle = '#a3afa1';
     ctx.textAlign = 'right';
-    for (let midi = Math.ceil(low / step) * step; midi <= high; midi += step) {
-      line(LEFT, y(midi), LEFT + w, y(midi));
+    for (let midi = low; midi <= high; midi++) {
+      const octave = midi % 12 === 0;
+      ctx.fillStyle = octave ? '#d9e9ca' : '#a3afa1';
+      line(LEFT, y(midi), LEFT + w, y(midi), octave ? '#566449' : '#303b32');
       ctx.fillText(noteName(midi), LEFT - 8, y(midi) + 4);
     }
-    if (target !== null) {
+    if (target !== null && target >= low && target <= high) {
       ctx.setLineDash([4, 4]);
       line(LEFT, y(target), LEFT + w, y(target), '#eac18c');
       ctx.setLineDash([]);
@@ -178,6 +176,9 @@ export function TimeChart({
   onSeek,
   compact = false,
   cutoff = data.duration,
+  pitchLow = DEFAULT_PITCH_LOW,
+  onPitchPan,
+  onPitchDragChange,
 }: {
   data: SessionData;
   range: TimeRange;
@@ -188,11 +189,36 @@ export function TimeChart({
   compact?: boolean;
   cutoff?: number;
   onSeek?: (time: number) => void;
+  pitchLow?: number;
+  onPitchPan?: (low: number) => void;
+  onPitchDragChange?: (dragging: boolean) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null),
     [width, setWidth] = useState(600),
     [hover, setHover] = useState<string | null>(null);
-  const height = compact ? 80 : kind === 'pitch' ? 180 : 290;
+  const drag = useRef<{ pointer: number; y: number; low: number } | null>(null);
+  const ignoreClick = useRef(false);
+  const wheelRemainder = useRef(0);
+  const height = compact ? 80 : kind === 'pitch' ? PITCH_CHART_HEIGHT : 290;
+  useEffect(() => {
+    if (kind !== 'pitch' || !onPitchPan) return;
+    const canvas = ref.current!;
+    const wheel = (event: WheelEvent) => {
+      if (!event.deltaY || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      const delta =
+        event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? height : 1);
+      if (Math.sign(delta) !== Math.sign(wheelRemainder.current)) wheelRemainder.current = 0;
+      wheelRemainder.current += delta;
+      const steps = Math.trunc(wheelRemainder.current / 40);
+      if (steps) {
+        wheelRemainder.current -= steps * 40;
+        onPitchPan(pitchLow - steps);
+      }
+    };
+    canvas.addEventListener('wheel', wheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', wheel);
+  }, [kind, onPitchPan, pitchLow, height]);
   useLayoutEffect(() => {
     const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
     observer.observe(ref.current!);
@@ -205,8 +231,20 @@ export function TimeChart({
     canvas.height = height * dpr;
     const ctx = canvas.getContext('2d')!;
     ctx.scale(dpr, dpr);
-    drawTimePlot(ctx, width, height, data, range, kind, target, cursor, cutoff);
-  }, [data, range.start, range.end, kind, width, height, target, cursor, revision, cutoff]);
+    drawTimePlot(ctx, width, height, data, range, kind, target, cursor, cutoff, pitchLow);
+  }, [
+    data,
+    range.start,
+    range.end,
+    kind,
+    width,
+    height,
+    target,
+    cursor,
+    revision,
+    cutoff,
+    pitchLow,
+  ]);
   const timeAt = (clientX: number) =>
     Math.max(
       range.start,
@@ -222,14 +260,62 @@ export function TimeChart({
     <div className="time-chart">
       <canvas
         ref={ref}
+        className={kind === 'pitch' ? 'pitch-pan-canvas' : undefined}
+        tabIndex={kind === 'pitch' ? 0 : undefined}
         style={{ width: '100%', height }}
         data-testid={`time-${kind}`}
         aria-label={
-          kind === 'pitch' ? '会话音高轨迹' : kind === 'spectrogram' ? '会话声谱图' : '连续波形概览'
+          kind === 'pitch'
+            ? `会话音高轨迹，${noteName(pitchLow)} 至 ${noteName(pitchLow + PITCH_SPAN)}，每条线一个半音`
+            : kind === 'spectrogram'
+              ? '会话声谱图'
+              : '连续波形概览'
         }
-        onClick={(event) => onSeek?.(timeAt(event.clientX))}
+        onKeyDown={(event) => {
+          if (!onPitchPan) return;
+          const delta = (
+            { ArrowUp: 1, ArrowDown: -1, PageUp: 12, PageDown: -12 } as Record<string, number>
+          )[event.key];
+          if (delta) {
+            event.preventDefault();
+            onPitchPan(pitchLow + delta);
+          }
+        }}
+        onPointerDown={(event) => {
+          ignoreClick.current = false;
+          if (kind !== 'pitch' || !onPitchPan || event.button !== 0) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          drag.current = { pointer: event.pointerId, y: event.clientY, low: pitchLow };
+        }}
+        onPointerUp={() => {
+          drag.current = null;
+          onPitchDragChange?.(false);
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+          ignoreClick.current = true;
+          onPitchDragChange?.(false);
+        }}
+        onLostPointerCapture={() => {
+          drag.current = null;
+          onPitchDragChange?.(false);
+        }}
+        onClick={(event) => {
+          if (!ignoreClick.current) onSeek?.(timeAt(event.clientX));
+          ignoreClick.current = false;
+        }}
         onPointerLeave={() => setHover(null)}
         onPointerMove={(event) => {
+          if (drag.current && onPitchPan && drag.current.pointer === event.pointerId) {
+            const dy = event.clientY - drag.current.y;
+            if (Math.abs(dy) > 4 || ignoreClick.current) {
+              onPitchDragChange?.(true);
+              ignoreClick.current = true;
+              onPitchPan(drag.current.low + (dy / (height - TOP - BOTTOM)) * PITCH_SPAN);
+              setHover(null);
+              return;
+            }
+          }
           const time = timeAt(event.clientX);
           const candidate = data.history.near(time, cutoff);
           const frame = candidate && candidate.time <= cutoff ? candidate : null;
@@ -245,7 +331,7 @@ export function TimeChart({
             ),
           );
           setHover(
-            `${formatTime(time, true)}${kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : '无分析数据'}` : ''}`,
+            `${formatTime(time, true)}${kind === 'pitch' ? (frame?.hz ? ` · ${noteName(Math.round(69 + 12 * Math.log2(frame.hz / 440)))} · ${frame.hz.toFixed(1)} Hz` : ' · 无稳定音高') : kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : '无分析数据'}` : ''}`,
           );
         }}
       />
@@ -326,10 +412,18 @@ export async function saveImage(
   target: number | null,
   snapshot: HTMLCanvasElement | null,
   cutoff = data.duration,
+  pitchLow?: number,
 ) {
+  const lastPitch = data.history.latestPitch(range.start, Math.min(range.end, cutoff));
+  const low =
+    pitchLow ??
+    followPitchLow(
+      DEFAULT_PITCH_LOW,
+      lastPitch?.hz ? 69 + 12 * Math.log2(lastPitch.hz / 440) : target,
+    );
   const canvas = document.createElement('canvas');
   canvas.width = 1600;
-  canvas.height = 930;
+  canvas.height = 1240;
   const ctx = canvas.getContext('2d')!;
   ctx.fillStyle = '#161c18';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -343,16 +437,16 @@ export async function saveImage(
   ctx.font = '15px sans-serif';
   ctx.fillStyle = '#a3afa1';
   ctx.fillText(
-    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  音频采样率 48 kHz`,
+    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  48 kHz  |  音域 ${noteName(low)} — ${noteName(low + PITCH_SPAN)}`,
     62,
     78,
   );
   ctx.save();
   ctx.translate(0, 100);
-  drawTimePlot(ctx, 1600, 260, data, range, 'pitch', target, null, cutoff);
+  drawTimePlot(ctx, 1600, PITCH_CHART_HEIGHT, data, range, 'pitch', target, null, cutoff, low);
   ctx.restore();
   ctx.save();
-  ctx.translate(0, 400);
+  ctx.translate(0, 710);
   if (view === 'spectrum' && snapshot) ctx.drawImage(snapshot, 0, 0, 1600, 430);
   else
     drawTimePlot(
@@ -372,18 +466,18 @@ export async function saveImage(
   if (view === 'spectrogram') {
     for (let i = 0; i < 256; i++) {
       ctx.fillStyle = `rgb(${colors[i].join(',')})`;
-      ctx.fillRect(62 + i * 2, 863, 2, 14);
+      ctx.fillRect(62 + i * 2, 1173, 2, 14);
     }
     ctx.fillStyle = '#a3afa1';
-    ctx.fillText('−100 dB', 62, 905);
-    ctx.fillText('−15 dB', 510, 905);
+    ctx.fillText('−100 dB', 62, 1215);
+    ctx.fillText('−15 dB', 510, 1215);
   }
   ctx.fillText(
     view === 'spectrum'
       ? '横轴 Hz（对数） · 纵轴 dB · 瞬时频谱对应当前快照'
       : '横轴为会话时间 mm:ss · 空缺表示没有分析数据',
     670,
-    888,
+    1198,
   );
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('PNG 生成失败');

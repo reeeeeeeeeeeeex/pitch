@@ -16,6 +16,7 @@ export async function installAudioSource(page: Page, mode = 'harmonic') {
         constraints: null as MediaStreamConstraints | null,
         release: null as (() => void) | null,
         setMode: (_mode: string) => {},
+        setFrequency: (_hz: number) => {},
       };
       Object.assign(window, { testAudio: state });
       const nativeInterval = window.setInterval.bind(window);
@@ -95,6 +96,12 @@ export async function installAudioSource(page: Page, mode = 'harmonic') {
                   440 * (index + 1),
                   ctx.currentTime + 3,
                 );
+            });
+          };
+          state.setFrequency = (hz: number) => {
+            sources.forEach(({ oscillator }, index) => {
+              oscillator.frequency.cancelScheduledValues(ctx.currentTime);
+              oscillator.frequency.setValueAtTime(hz * (index + 1), ctx.currentTime);
             });
           };
           const stream = destination.stream;

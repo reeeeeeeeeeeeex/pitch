@@ -1,5 +1,6 @@
-import { PIANO_FIRST, PIANO_LAST } from './piano-notes';
 import { describePitch, FFT_SIZE, PITCH_SIZE } from './analysis';
+import { PIANO_FIRST, PIANO_LAST } from './piano-notes';
+import { DEFAULT_PITCH_LOW, PITCH_MIN_LOW, PITCH_MAX_LOW } from './pitch-viewport';
 import {
   HistoryStore,
   EnvelopeStore,
@@ -17,6 +18,8 @@ export const DEFAULT_DISPLAY: SavedDisplay = {
   target: null,
   milliseconds: 20,
   gain: 1,
+  pitchLow: DEFAULT_PITCH_LOW,
+  pitchFollowing: true,
 };
 export function downloadBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob),
@@ -188,7 +191,18 @@ export async function decodeSession(
     target: d.target === null ? null : number(d.target, PIANO_FIRST, PIANO_LAST),
     milliseconds: [5, 10, 20, 50].includes(Number(d.milliseconds)) ? Number(d.milliseconds) : 20,
     gain: [1, 2, 4, 8].includes(Number(d.gain)) ? Number(d.gain) : 1,
+    pitchLow:
+      d.pitchLow === undefined
+        ? DEFAULT_PITCH_LOW
+        : number(d.pitchLow, PITCH_MIN_LOW, PITCH_MAX_LOW),
+    pitchFollowing:
+      d.pitchFollowing === undefined
+        ? true
+        : typeof d.pitchFollowing === 'boolean'
+          ? d.pitchFollowing
+          : fail('音高跟随设置不合法'),
   };
+  if (!Number.isInteger(display.pitchLow)) fail('音高显示范围不合法');
   let settings: MediaTrackSettings | null = null;
   if (m.settings) {
     const s = object(m.settings);

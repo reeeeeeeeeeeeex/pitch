@@ -86,7 +86,7 @@ test('recording, history navigation, PNG, archive roundtrip and replacement guar
   const png = await download(page, '保存 PNG', info.outputPath('whole.png'));
   const pngBytes = await readFile(png);
   expect(pngBytes.readUInt32BE(16)).toBe(1600);
-  expect(pngBytes.readUInt32BE(20)).toBe(930);
+  expect(pngBytes.readUInt32BE(20)).toBe(1240);
   expect(pngBytes.equals(await readFile(visiblePng))).toBe(false);
   await page.getByRole('button', { name: '开始录音' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();

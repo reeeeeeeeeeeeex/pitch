@@ -265,7 +265,9 @@ main {
 }
 .tuner-panel {
   display: grid;
-  grid-template-columns: 225px 1fr 1.28fr;
+  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-areas: 'readout history' 'tuning history';
+  grid-template-rows: 180px 1fr;
   margin-bottom: 20px;
   min-height: 196px;
   padding: 23px 23px 19px;
@@ -277,8 +279,8 @@ main {
   gap: 10px;
 }
 .tuner-readout {
+  grid-area: readout;
   padding-right: 28px;
-  border-right: 1px solid var(--border);
 }
 .live-tag {
   font:
@@ -348,8 +350,9 @@ main {
   color: var(--accent);
 }
 .tuning-center {
-  padding: 0 27px;
-  align-self: center;
+  grid-area: tuning;
+  padding: 28px 28px 0 0;
+  align-self: start;
   position: relative;
 }
 .tuning-center .eyebrow {
@@ -468,6 +471,7 @@ main {
   font-size: 10px;
 }
 .history-area {
+  grid-area: history;
   border-left: 1px solid var(--border);
   padding-left: 23px;
   min-width: 0;
@@ -477,6 +481,66 @@ main {
 }
 .small {
   font-size: 10px;
+}
+.pitch-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 5px;
+}
+.pitch-range {
+  color: #b5c5a4;
+  font:
+    12px Consolas,
+    monospace;
+}
+.pitch-viewport {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 4px;
+}
+.pitch-scrollbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0 24px;
+  gap: 10px;
+}
+.pitch-scrollbar button {
+  background: #273120;
+  color: var(--accent);
+  border-radius: 5px;
+  width: 28px;
+  height: 28px;
+}
+.pitch-scrollbar input {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  flex: 1;
+  width: 24px;
+  min-height: 0;
+  accent-color: var(--accent);
+  cursor: ns-resize;
+}
+.time-chart .pitch-pan-canvas {
+  cursor: grab;
+  touch-action: none;
+}
+.time-chart .pitch-pan-canvas:active {
+  cursor: grabbing;
+}
+.pitch-pan-canvas:focus-visible,
+.pitch-scrollbar input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pitch-hint {
+  color: #8d9a80;
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 6px 0 0;
 }
 .pitch-history {
   display: block;
@@ -1044,14 +1108,14 @@ main {
     padding: 0 30px;
   }
   .tuner-panel {
-    grid-template-columns: 190px 1fr 1.1fr;
+    grid-template-columns: 230px minmax(0, 1fr);
     padding: 20px;
   }
   .tuner-readout {
     padding-right: 20px;
   }
   .tuning-center {
-    padding: 0 20px;
+    padding: 28px 20px 0 0;
   }
   .history-area {
     padding-left: 17px;
@@ -1078,6 +1142,8 @@ main {
   }
   .tuner-panel {
     grid-template-columns: 190px 1fr;
+    grid-template-areas: 'readout tuning' 'history history';
+    grid-template-rows: auto auto;
   }
   .history-area {
     grid-column: 1 / -1;
@@ -1090,7 +1156,8 @@ main {
     height: 125px;
   }
   .tuning-center {
-    padding-right: 0;
+    padding: 0 0 0 24px;
+    align-self: center;
   }
   .tuner-readout {
     padding-right: 25px;
