@@ -763,7 +763,7 @@ h1 > span {
   width: 125px;
   height: 6px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #0f1617, #233a4b, #396870, #63a38a, #bee183, #f5e29c);
+  background: linear-gradient(90deg, #0f1719, #224958, #357e77, #a9d171, #ffdf93);
 }
 .color-legend small {
   font:
@@ -1450,4 +1450,172 @@ h1 > span {
   * {
     transition: none !important;
   }
+}
+.session-tools,
+.timeline-controls {
+  padding: 20px 24px;
+  margin: 18px 0;
+}
+.session-info,
+.session-actions,
+.timeline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.session-info strong {
+  font:
+    25px Consolas,
+    monospace;
+  color: var(--accent);
+}
+.session-info span {
+  font-size: 12px;
+  color: #97a292;
+}
+.session-actions {
+  margin-top: 15px;
+}
+.session-tools button,
+.timeline-controls button,
+.save-dialog button {
+  background: #2c382b;
+  border: 1px solid #46533f;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #d6eacb;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.session-tools audio {
+  margin-top: 18px;
+  width: 100%;
+  height: 40px;
+}
+.timeline-toolbar {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.timeline-toolbar select {
+  background: #202a20;
+  color: #d6eacb;
+  border: 1px solid #46533f;
+  border-radius: 5px;
+  padding: 7px;
+}
+.time-chart {
+  position: relative;
+  min-width: 0;
+}
+.time-chart canvas {
+  display: block;
+  cursor: crosshair;
+}
+.time-tooltip {
+  position: absolute;
+  top: 5px;
+  right: 28px;
+  pointer-events: none;
+  background: #111d11e8;
+  font:
+    11px Consolas,
+    monospace;
+  padding: 5px 8px;
+  color: #d6eacb;
+  border-radius: 4px;
+}
+.detail-caption {
+  padding: 10px 24px 0;
+  font-size: 11px;
+  color: #929d8b;
+}
+.nav-drag {
+  position: relative;
+  height: 80px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+.nav-drag .time-chart {
+  height: 80px;
+  pointer-events: none;
+}
+.nav-drag canvas {
+  height: 80px !important;
+}
+.nav-selection {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border: 1px solid #b8df86;
+  background: #b8df8615;
+  pointer-events: none;
+}
+.nav-slider {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 11px;
+  margin-top: 10px;
+}
+.nav-slider input {
+  flex: 1;
+  min-width: 50px;
+  accent-color: #b8df86;
+}
+.save-dialog {
+  width: min(480px, 100%);
+  border: 1px solid #536148;
+  background: #1b241c;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 24px 80px #0008;
+}
+.save-dialog h2 {
+  font-size: 20px;
+}
+.save-dialog p {
+  color: #a6b19c;
+  line-height: 1.8;
+  font-size: 13px;
+}
+.save-dialog > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.record-button {
+  margin-left: 8px;
+  background: #6b3434;
+  color: #ffe5dd;
+}
+@media (max-width: 700px) {
+  .input-strip {
+    flex-wrap: wrap;
+  }
+  .session-tools,
+  .timeline-controls {
+    padding: 16px;
+  }
+  .timeline-toolbar {
+    gap: 10px;
+  }
+  .nav-slider span {
+    display: none;
+  }
+}
+.save-dialog {
+  margin: auto;
+  color: #d6eacb;
+}
+.save-dialog::backdrop {
+  background: #000a;
+}
+
+.record-button:hover {
+  background: #854141;
 }

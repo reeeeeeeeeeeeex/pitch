@@ -1,0 +1,391 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { frequencyAt, frequencyRatio, noteName } from '../audio/analysis';
+import { formatTime, type SessionData, type TimeRange } from '../audio/history';
+import { downloadBlob } from '../audio/archive';
+export type TimePlot = 'pitch' | 'spectrogram' | 'waveform';
+const LEFT = 62,
+  RIGHT = 24,
+  TOP = 24,
+  BOTTOM = 32;
+const colors = Array.from({ length: 256 }, (_, i) => {
+  const stops = [
+    [15, 23, 25],
+    [34, 73, 88],
+    [53, 126, 119],
+    [169, 209, 113],
+    [255, 223, 147],
+  ];
+  const n = (i / 255) * 4,
+    a = Math.min(3, Math.floor(n)),
+    t = n - a;
+  return stops[a].map((v, c) => Math.round(v + (stops[a + 1][c] - v) * t));
+});
+export function drawTimePlot(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  data: SessionData,
+  range: TimeRange,
+  kind: TimePlot,
+  target: number | null,
+  cursor: number | null,
+  cutoff = data.duration,
+) {
+  ctx.save();
+  ctx.fillStyle = '#161c18';
+  ctx.fillRect(0, 0, width, height);
+  ctx.font = '11px Consolas, monospace';
+  const w = Math.max(1, width - LEFT - RIGHT),
+    h = Math.max(1, height - TOP - BOTTOM),
+    span = Math.max(0.001, range.end - range.start);
+  const x = (time: number) => LEFT + ((time - range.start) / span) * w;
+  const line = (x1: number, y1: number, x2: number, y2: number, color = '#303b32') => {
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  };
+  if (kind === 'spectrogram') {
+    const columns = Math.max(1, Math.floor(w)),
+      rows = Math.max(1, Math.floor(h));
+    const image = ctx.createImageData(columns, rows);
+    for (let px = 0; px < columns; px++) {
+      const frame = data.history.near(range.start + ((px + 0.5) / columns) * span, cutoff);
+      if (!frame || frame.time > cutoff) continue;
+      for (let py = 0; py < rows; py++) {
+        const value = frame.spectrum[Math.min(511, Math.floor((1 - (py + 0.5) / rows) * 512))],
+          color = colors[value],
+          i = (py * columns + px) * 4;
+        image.data[i] = color[0];
+        image.data[i + 1] = color[1];
+        image.data[i + 2] = color[2];
+        image.data[i + 3] = 255;
+      }
+    }
+    // putImageData ignores transforms, so render the pixel buffer through a bounded scratch canvas.
+    const scratch = document.createElement('canvas');
+    scratch.width = columns;
+    scratch.height = rows;
+    scratch.getContext('2d')!.putImageData(image, 0, 0);
+    ctx.drawImage(scratch, LEFT, TOP, w, h);
+    ctx.fillStyle = '#a3afa1';
+    ctx.textAlign = 'right';
+    for (const hz of [50, 100, 200, 500, 1000, 2000, 4000, 8000]) {
+      const y = TOP + (1 - frequencyRatio(hz)) * h;
+      line(LEFT, y, LEFT + w, y, '#77817640');
+      ctx.fillText(hz >= 1000 ? `${hz / 1000}k` : String(hz), LEFT - 8, y + 4);
+    }
+    ctx.fillText('Hz', LEFT - 8, 13);
+  } else if (kind === 'pitch') {
+    let low = target ?? 60,
+      high = target ?? 72;
+    const frames = Array.from(
+      data.history.visible({ start: range.start, end: Math.min(range.end, cutoff) }, w * 2),
+    );
+    for (const f of frames)
+      if (f.hz) {
+        const midi = 69 + 12 * Math.log2(f.hz / 440);
+        low = Math.min(low, midi - 1);
+        high = Math.max(high, midi + 1);
+      }
+    const middle = (low + high) / 2;
+    low = Math.floor(Math.min(low, middle - 3));
+    high = Math.ceil(Math.max(high, middle + 3));
+    const y = (midi: number) => TOP + ((high - midi) / (high - low)) * h;
+    const step = Math.max(1, Math.ceil((high - low) / 6));
+    ctx.fillStyle = '#a3afa1';
+    ctx.textAlign = 'right';
+    for (let midi = Math.ceil(low / step) * step; midi <= high; midi += step) {
+      line(LEFT, y(midi), LEFT + w, y(midi));
+      ctx.fillText(noteName(midi), LEFT - 8, y(midi) + 4);
+    }
+    if (target !== null) {
+      ctx.setLineDash([4, 4]);
+      line(LEFT, y(target), LEFT + w, y(target), '#eac18c');
+      ctx.setLineDash([]);
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(LEFT, TOP, w, h);
+    ctx.clip();
+    ctx.strokeStyle = '#c2ec88';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    let previous = -Infinity;
+    for (const f of frames) {
+      if (!f.hz) {
+        previous = -Infinity;
+        continue;
+      }
+      const py = y(69 + 12 * Math.log2(f.hz / 440));
+      if (f.breakBefore || f.time - previous > Math.max(0.15, (span / w) * 2))
+        ctx.moveTo(x(f.time), py);
+      else ctx.lineTo(x(f.time), py);
+      previous = f.time;
+    }
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    const y = (value: number) => TOP + ((1 - value) / 2) * h;
+    ctx.fillStyle = '#a3afa1';
+    ctx.textAlign = 'right';
+    for (const value of [-1, 0, 1]) {
+      line(LEFT, y(value), LEFT + w, y(value));
+      ctx.fillText(String(value), LEFT - 8, y(value) + 4);
+    }
+    ctx.fillText('振幅', LEFT - 8, 13);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(LEFT, TOP, w, h);
+    ctx.clip();
+    ctx.strokeStyle = '#9bc5a1';
+    ctx.beginPath();
+    for (const p of data.envelopes.visible(range, w)) {
+      if (p.time > cutoff) continue;
+      ctx.moveTo(x(p.time), y(p.min));
+      ctx.lineTo(x(p.time), y(p.max));
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#a3afa1';
+  ctx.textAlign = 'center';
+  const ticks = Math.max(2, Math.floor(w / 100));
+  for (let i = 0; i <= ticks; i++) {
+    const time = range.start + (i / ticks) * span;
+    line(x(time), TOP, x(time), TOP + h, '#77817625');
+    ctx.fillText(formatTime(time, span / ticks < 1), x(time), height - 10);
+  }
+  if (cursor !== null && cursor >= range.start && cursor <= range.end) {
+    line(x(cursor), TOP, x(cursor), TOP + h, '#f4cd90');
+    ctx.fillStyle = '#f4cd90';
+    ctx.fillText(
+      formatTime(cursor, true),
+      Math.max(LEFT + 30, Math.min(width - 50, x(cursor))),
+      13,
+    );
+  }
+  ctx.restore();
+}
+export function TimeChart({
+  data,
+  range,
+  kind,
+  target = null,
+  cursor = null,
+  revision,
+  onSeek,
+  compact = false,
+  cutoff = data.duration,
+}: {
+  data: SessionData;
+  range: TimeRange;
+  kind: TimePlot;
+  target?: number | null;
+  cursor?: number | null;
+  revision: number;
+  compact?: boolean;
+  cutoff?: number;
+  onSeek?: (time: number) => void;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null),
+    [width, setWidth] = useState(600),
+    [hover, setHover] = useState<string | null>(null);
+  const height = compact ? 80 : kind === 'pitch' ? 180 : 290;
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(ref.current!);
+    return () => observer.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    const canvas = ref.current!,
+      dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+    drawTimePlot(ctx, width, height, data, range, kind, target, cursor, cutoff);
+  }, [data, range.start, range.end, kind, width, height, target, cursor, revision, cutoff]);
+  const timeAt = (clientX: number) =>
+    Math.max(
+      range.start,
+      Math.min(
+        range.end,
+        range.start +
+          ((clientX - ref.current!.getBoundingClientRect().left - LEFT) /
+            Math.max(1, width - LEFT - RIGHT)) *
+            (range.end - range.start),
+      ),
+    );
+  return (
+    <div className="time-chart">
+      <canvas
+        ref={ref}
+        style={{ width: '100%', height }}
+        data-testid={`time-${kind}`}
+        aria-label={
+          kind === 'pitch' ? '会话音高轨迹' : kind === 'spectrogram' ? '会话声谱图' : '连续波形概览'
+        }
+        onClick={(event) => onSeek?.(timeAt(event.clientX))}
+        onPointerLeave={() => setHover(null)}
+        onPointerMove={(event) => {
+          const time = timeAt(event.clientX);
+          const candidate = data.history.near(time, cutoff);
+          const frame = candidate && candidate.time <= cutoff ? candidate : null;
+          const hz = frequencyAt(
+            Math.max(
+              0,
+              Math.min(
+                1,
+                1 -
+                  (event.clientY - ref.current!.getBoundingClientRect().top - TOP) /
+                    (height - TOP - BOTTOM),
+              ),
+            ),
+          );
+          setHover(
+            `${formatTime(time, true)}${kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : '无分析数据'}` : ''}`,
+          );
+        }}
+      />
+      {hover && <span className="time-tooltip">{hover}</span>}
+    </div>
+  );
+}
+export function Navigator({
+  data,
+  range,
+  revision,
+  onNavigate,
+}: {
+  data: SessionData;
+  range: TimeRange;
+  revision: number;
+  onNavigate: (start: number) => void;
+}) {
+  const full = { start: 0, end: Math.max(1, data.duration) };
+  const navigate = (element: HTMLElement, clientX: number) => {
+    const rect = element.getBoundingClientRect();
+    onNavigate(
+      ((clientX - rect.left - LEFT) / Math.max(1, rect.width - LEFT - RIGHT)) * data.duration -
+        (range.end - range.start) / 2,
+    );
+  };
+  return (
+    <div
+      className="navigator"
+      onWheel={(event) => {
+        onNavigate(
+          range.start + ((event.deltaX || event.deltaY) / 500) * (range.end - range.start),
+        );
+      }}
+    >
+      <div
+        className="nav-drag"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          navigate(event.currentTarget, event.clientX);
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId))
+            navigate(event.currentTarget, event.clientX);
+        }}
+      >
+        <TimeChart data={data} range={full} kind="waveform" revision={revision} compact />
+        <div
+          className="nav-selection"
+          style={{
+            left: `calc(62px + (100% - 86px) * ${range.start / full.end})`,
+            width: `calc((100% - 86px) * ${Math.min(1, (range.end - range.start) / full.end)})`,
+          }}
+        />
+      </div>
+      <label className="nav-slider">
+        定位历史
+        <input
+          aria-label="定位历史"
+          type="range"
+          min={0}
+          max={Math.max(0, data.duration - (range.end - range.start))}
+          step={0.01}
+          value={range.start}
+          onChange={(event) => onNavigate(Number(event.target.value))}
+        />
+        <span>
+          {formatTime(range.start)} — {formatTime(Math.min(data.duration, range.end))}
+        </span>
+      </label>
+    </div>
+  );
+}
+export async function saveImage(
+  data: SessionData,
+  range: TimeRange,
+  view: 'spectrum' | 'spectrogram' | 'waveform',
+  target: number | null,
+  snapshot: HTMLCanvasElement | null,
+  cutoff = data.duration,
+) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1600;
+  canvas.height = 930;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#161c18';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#e2edd9';
+  ctx.font = '26px sans-serif';
+  ctx.fillText(
+    `声见 · ${view === 'spectrum' ? '频谱快照' : view === 'spectrogram' ? '声谱图' : '波形概览'}`,
+    62,
+    45,
+  );
+  ctx.font = '15px sans-serif';
+  ctx.fillStyle = '#a3afa1';
+  ctx.fillText(
+    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  音频采样率 48 kHz`,
+    62,
+    78,
+  );
+  ctx.save();
+  ctx.translate(0, 100);
+  drawTimePlot(ctx, 1600, 260, data, range, 'pitch', target, null, cutoff);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(0, 400);
+  if (view === 'spectrum' && snapshot) ctx.drawImage(snapshot, 0, 0, 1600, 430);
+  else
+    drawTimePlot(
+      ctx,
+      1600,
+      430,
+      data,
+      range,
+      view === 'spectrum' ? 'waveform' : view,
+      target,
+      null,
+      cutoff,
+    );
+  ctx.restore();
+  ctx.font = '15px sans-serif';
+  ctx.fillStyle = '#a3afa1';
+  if (view === 'spectrogram') {
+    for (let i = 0; i < 256; i++) {
+      ctx.fillStyle = `rgb(${colors[i].join(',')})`;
+      ctx.fillRect(62 + i * 2, 863, 2, 14);
+    }
+    ctx.fillStyle = '#a3afa1';
+    ctx.fillText('−100 dB', 62, 905);
+    ctx.fillText('−15 dB', 510, 905);
+  }
+  ctx.fillText(
+    view === 'spectrum'
+      ? '横轴 Hz（对数） · 纵轴 dB · 瞬时频谱对应当前快照'
+      : '横轴为会话时间 mm:ss · 空缺表示没有分析数据',
+    670,
+    888,
+  );
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('PNG 生成失败');
+  downloadBlob(blob, `${data.name}-${view}.png`);
+}

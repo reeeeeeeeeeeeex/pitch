@@ -1,104 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 
 // Browser-only test source. Production has no demo data or microphone bypass.
-async function installAudioSource(page: Page, mode = 'harmonic') {
-  await page.addInitScript(
-    ({ mode }) => {
-      const state = {
-        mode,
-        calls: 0,
-        stopped: 0,
-        closed: 0,
-        samples: 0,
-        streams: [] as MediaStream[],
-        contexts: [] as AudioContext[],
-        allContexts: [] as AudioContext[],
-        constraints: null as MediaStreamConstraints | null,
-        release: null as (() => void) | null,
-        setMode: (_mode: string) => {},
-      };
-      Object.assign(window, { testAudio: state });
-      const NativeContext = window.AudioContext;
-      window.AudioContext = class extends NativeContext {
-        constructor(options?: AudioContextOptions) {
-          super(options);
-          state.allContexts.push(this);
-        }
-      };
-      const readTimeData = AnalyserNode.prototype.getFloatTimeDomainData;
-      AnalyserNode.prototype.getFloatTimeDomainData = function (buffer) {
-        state.samples++;
-        return readTimeData.call(this, buffer);
-      };
-      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
-        configurable: true,
-        value: async (constraints: MediaStreamConstraints) => {
-          state.calls++;
-          state.constraints = constraints;
-          if (state.mode === 'denied') throw new DOMException('Test denial', 'NotAllowedError');
-          if (state.mode === 'missing')
-            throw new DOMException('Test missing device', 'NotFoundError');
-          if (state.mode === 'busy') throw new DOMException('Test busy device', 'NotReadableError');
-          const ctx = new AudioContext();
-          state.contexts.push(ctx);
-          await ctx.resume();
-          const destination = ctx.createMediaStreamDestination();
-          const sources: { oscillator: OscillatorNode; gain: GainNode }[] = [];
-          for (const [harmonic, amplitude] of [
-            [1, 0.2],
-            [2, 0.6],
-            [3, 0.1],
-          ]) {
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.frequency.value = 220 * harmonic;
-            gain.gain.value = state.mode === 'silence' ? 0 : amplitude;
-            oscillator.connect(gain).connect(destination);
-            oscillator.start();
-            sources.push({ oscillator, gain });
-          }
-          state.setMode = (next: string) => {
-            state.mode = next;
-            sources.forEach(({ oscillator, gain }, index) => {
-              oscillator.frequency.cancelScheduledValues(ctx.currentTime);
-              oscillator.frequency.setValueAtTime(220 * (index + 1), ctx.currentTime);
-              gain.gain.value = next === 'silence' ? 0 : [0.2, 0.6, 0.1][index];
-              if (next === 'glide')
-                oscillator.frequency.exponentialRampToValueAtTime(
-                  440 * (index + 1),
-                  ctx.currentTime + 3,
-                );
-            });
-          };
-          const stream = destination.stream;
-          state.streams.push(stream);
-          const track = stream.getAudioTracks()[0];
-          const stop = track.stop.bind(track);
-          let stopped = false;
-          track.stop = () => {
-            if (stopped) return;
-            stopped = true;
-            state.stopped++;
-            sources.forEach(({ oscillator, gain }) => {
-              oscillator.stop();
-              oscillator.disconnect();
-              gain.disconnect();
-            });
-            stop();
-            void ctx.close().then(() => state.closed++);
-          };
-          if (state.mode === 'pending')
-            await new Promise<void>((resolve) => {
-              state.release = resolve;
-            });
-          return stream;
-        },
-      });
-    },
-    { mode },
-  );
-}
+import { installAudioSource } from './source';
 
 test('idle workspace is honest, responsive, and keyboard accessible', async ({
   page,
@@ -151,13 +55,13 @@ test('real Web Audio processes harmonics, all views, freeze, piano, and stop', a
   await page.waitForTimeout(3300);
   await page.getByRole('button', { name: '冻结画面' }).click();
   const frozenCanvas = await page
-    .locator('.analysis-canvas')
+    .getByTestId('time-spectrogram')
     .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL());
   await page.evaluate(() => (window as any).testAudio.setMode('silence'));
   await expect(page.getByTestId('pitch-note')).toHaveText('—');
   expect(
     await page
-      .locator('.analysis-canvas')
+      .getByTestId('time-spectrogram')
       .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL()),
   ).toBe(frozenCanvas);
   await page.screenshot({ path: testInfo.outputPath('spectrogram-frozen.png'), fullPage: true });
@@ -185,10 +89,11 @@ test('real Web Audio processes harmonics, all views, freeze, piano, and stop', a
   ).toBe(true);
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: '开启麦克风' }).click();
+    await page.getByRole('button', { name: '放弃并继续' }).click();
     await expect(page.getByTestId('pitch-note')).toHaveText('A3');
     await page.getByRole('button', { name: '停止麦克风' }).click();
   }
-  expect(await page.evaluate(() => (window as any).testAudio.stopped)).toBe(4);
+  await expect.poll(() => page.evaluate(() => (window as any).testAudio.stopped)).toBe(4);
   expect(errors).toEqual([]);
 });
 
@@ -231,7 +136,7 @@ test('device disconnection releases the stream and reports the cause', async ({ 
     (window as any).testAudio.streams[0].getAudioTracks()[0].dispatchEvent(new Event('ended')),
   );
   await expect(page.getByRole('alert')).toContainText('麦克风已断开');
-  expect(await page.evaluate(() => (window as any).testAudio.stopped)).toBe(1);
+  await expect.poll(() => page.evaluate(() => (window as any).testAudio.stopped)).toBe(1);
 });
 
 test('suspended audio clears stale pitch and resumes with a time gap', async ({ page }) => {

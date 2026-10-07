@@ -18,8 +18,11 @@ import {
 import { AudioSession } from './audio/session';
 import { ReferencePiano } from './audio/piano';
 import { FFT_SIZE, noteName, spectralPeaks, type AnalysisFrame } from './audio/analysis';
-import { AnalysisChart, PitchHistory, targetDeviation, type View } from './components/Charts';
+import { AnalysisChart, targetDeviation, type View } from './components/Charts';
 import { Piano } from './components/Piano';
+import { TimeChart, Navigator, saveImage } from './components/Timeline';
+import { formatTime, timeWindow, type SavedDisplay } from './audio/history';
+import { encodeSession, decodeSession, downloadBlob } from './audio/archive';
 
 const VIEWS = [
   {
@@ -66,11 +69,112 @@ export default function App() {
   const [deviceId, setDeviceId] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [playbackError, setPlaybackError] = useState('');
+  const [windowSeconds, setWindowSeconds] = useState(30);
+  const [following, setFollowing] = useState(true);
+  const [viewStart, setViewStart] = useState(0);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [fileError, setFileError] = useState('');
+  const [fileBusy, setFileBusy] = useState(false);
+  const [pending, setPending] = useState<(() => void) | null>(null);
+  const [imageScope, setImageScope] = useState('visible');
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+  const data = snapshot.data;
+  const active = ['running', 'requesting', 'stopping'].includes(snapshot.status);
+  const range = timeWindow(frozen?.endTime ?? data.duration, windowSeconds, following, viewStart);
+  const display: SavedDisplay = {
+    view,
+    windowSeconds,
+    target,
+    milliseconds,
+    gain,
+  };
+  const navigate = (start: number) => {
+    setFollowing(false);
+    setViewStart(Math.max(0, start));
+  };
+  const seek = (time: number) => {
+    if (active || !audioRef.current) return;
+    const value = Math.max(0, Math.min(data.duration, time));
+    audioRef.current.currentTime = value;
+    setCursor(value);
+  };
+  const saveSession = () => {
+    downloadBlob(encodeSession(data, display), data.name + '.pitchsession');
+    session.markSaved();
+  };
+  const protect = (action: () => void) => {
+    if (snapshot.dirty) setPending(() => action);
+    else action();
+  };
+  useEffect(() => {
+    if (!data.wav) {
+      setAudioUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(data.wav);
+    setAudioUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [data.wav]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (session.getSnapshot().dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [session]);
+  const importSession = async (file: File) => {
+    setFileBusy(true);
+    setFileError('');
+    try {
+      const imported = await decodeSession(file);
+      protect(() => {
+        audioRef.current?.pause();
+        session.load(imported.data);
+        setView(imported.display.view);
+        setTarget(imported.display.target);
+        setWindowSeconds(imported.display.windowSeconds);
+        setMilliseconds(imported.display.milliseconds);
+        setGain(imported.display.gain);
+        setFrozen(null);
+        setFollowing(false);
+        setViewStart(0);
+        setCursor(null);
+      });
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : '文件无法打开');
+    } finally {
+      setFileBusy(false);
+    }
+  };
+  const exportImage = async () => {
+    setFileError('');
+    try {
+      await saveImage(
+        data,
+        imageScope === 'whole' && view !== 'spectrum'
+          ? { start: 0, end: Math.max(1, data.duration) }
+          : range,
+        view,
+        target,
+        document.querySelector('#analysis-content canvas'),
+        imageScope === 'whole' && view !== 'spectrum'
+          ? data.duration
+          : (frozen?.endTime ?? data.duration),
+      );
+    } catch {
+      setFileError('图像保存失败，请重试。');
+    }
+  };
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const running = snapshot.status === 'running';
   const requesting = snapshot.status === 'requesting';
   const currentPitch = snapshot.frame?.pitch ?? null;
-  const displayedFrame = frozen?.frame ?? snapshot.frame ?? session.history.at(-1) ?? null;
+  const displayedFrame = frozen?.frame ?? snapshot.frame ?? data.latest ?? null;
   const displayedHistory = frozen?.frames ?? session.history;
   const endTime = frozen?.endTime ?? displayedFrame?.time ?? 0;
   const deviation = targetDeviation(snapshot.frame, target);
@@ -124,14 +228,25 @@ export default function App() {
     [piano],
   );
   const clearTarget = useCallback(() => setTarget(null), []);
-  const start = () => {
-    setFrozen(null);
-    void session.start(deviceId);
-  };
+  const start = (record = false) =>
+    protect(() => {
+      audioRef.current?.pause();
+      setFrozen(null);
+      setCursor(null);
+      setFollowing(true);
+      setViewStart(0);
+      setFileError('');
+      void session.start(deviceId, record);
+    });
   const toggleFreeze = () => {
-    if (frozen) setFrozen(null);
-    else if (displayedFrame)
-      setFrozen({ frame: displayedFrame, frames: [...session.history], endTime });
+    if (frozen) {
+      setFrozen(null);
+      setFollowing(true);
+    } else if (displayedFrame) {
+      setViewStart(range.start);
+      setFollowing(false);
+      setFrozen({ frame: displayedFrame, frames: [...session.history], endTime: data.duration });
+    }
   };
   const noteStatus = !currentPitch
     ? running
@@ -214,7 +329,7 @@ export default function App() {
               <select
                 id="microphone"
                 value={deviceId}
-                disabled={running || requesting}
+                disabled={active || fileBusy}
                 onChange={(event) => setDeviceId(event.target.value)}
                 title={running ? '停止麦克风后可切换设备' : '选择输入设备'}
               >
@@ -238,7 +353,9 @@ export default function App() {
             />
             <span>
               {running
-                ? '正在聆听'
+                ? data.recorded
+                  ? '正在录音'
+                  : '仅分析 · 未录音'
                 : requesting
                   ? '等待麦克风授权'
                   : snapshot.status === 'error'
@@ -253,16 +370,141 @@ export default function App() {
           )}
           <button
             className={`mic-button ${running || requesting ? 'stop' : ''}`}
-            onClick={running || requesting ? session.stop : start}
+            disabled={snapshot.status === 'stopping' || fileBusy}
+            onClick={() => (active ? void session.stop() : start())}
           >
             {running || requesting ? <Square size={15} fill="currentColor" /> : <Mic size={17} />}
-            {running ? '停止麦克风' : requesting ? '取消' : '开启麦克风'}
+            {running
+              ? '停止麦克风'
+              : requesting
+                ? '取消'
+                : snapshot.status === 'stopping'
+                  ? '正在结束…'
+                  : '开启麦克风'}
           </button>
+          {!active && (
+            <button
+              className="mic-button record-button"
+              disabled={fileBusy}
+              onClick={() => start(true)}
+            >
+              ● 开始录音
+            </button>
+          )}
         </section>
+        <section className="session-tools panel" aria-label="会话与保存">
+          <div className="session-info">
+            <strong data-testid="session-duration">{formatTime(data.duration, true)}</strong>
+            <span>
+              {active
+                ? data.recorded
+                  ? '录音中 · WAV 48 kHz / 单声道 / 16 位'
+                  : '仅分析'
+                : data.duration
+                  ? data.recorded
+                    ? '录音已保留'
+                    : '分析已保留'
+                  : '开启麦克风仅分析，或选择开始录音'}{' '}
+              · 最长 30 分钟
+            </span>
+          </div>
+          <div className="session-actions">
+            <button
+              disabled={active || fileBusy || !data.wav}
+              onClick={() => downloadBlob(data.wav!, data.name + '.wav')}
+            >
+              下载 WAV
+            </button>
+            <button disabled={active || fileBusy || !data.duration} onClick={saveSession}>
+              保存完整会话
+            </button>
+            <button disabled={active || fileBusy} onClick={() => importRef.current?.click()}>
+              {fileBusy ? '正在读取…' : '打开会话'}
+            </button>
+            <input
+              ref={importRef}
+              hidden
+              aria-label="导入会话文件"
+              type="file"
+              accept=".pitchsession"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void importSession(file);
+              }}
+            />
+            <span className="muted small">
+              {snapshot.dirty
+                ? '会话尚未保存'
+                : data.duration
+                  ? '会话已导出或导入'
+                  : '文件仅在本机处理'}
+            </span>
+          </div>
+          {!active && audioUrl && (
+            <audio
+              ref={audioRef}
+              aria-label="录音回放"
+              controls
+              src={audioUrl}
+              onTimeUpdate={(event) => {
+                const t = event.currentTarget.currentTime;
+                setCursor(t);
+                if (
+                  !event.currentTarget.paused &&
+                  windowSeconds &&
+                  (t < range.start || t > range.end)
+                )
+                  navigate(Math.floor(t / windowSeconds) * windowSeconds);
+              }}
+            />
+          )}
+          {(snapshot.notice || fileError) && (
+            <p role={fileError ? 'alert' : 'status'}>{fileError || snapshot.notice}</p>
+          )}
+        </section>
+        {pending && (
+          <dialog
+            className="save-dialog"
+            ref={(element) => {
+              if (element && !element.open) element.showModal();
+            }}
+            onCancel={() => setPending(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unsaved-title"
+          >
+            <h2 id="unsaved-title">保存当前会话？</h2>
+            <p>当前结果尚未保存为完整会话。继续后将替换它；WAV 或 PNG 无法单独恢复全部分析数据。</p>
+            <div>
+              <button
+                autoFocus
+                onClick={() => {
+                  saveSession();
+                  const action = pending;
+                  setPending(null);
+                  action();
+                }}
+              >
+                保存并继续
+              </button>
+              <button
+                onClick={() => {
+                  const action = pending;
+                  setPending(null);
+                  action();
+                }}
+              >
+                放弃并继续
+              </button>
+              <button onClick={() => setPending(null)}>取消</button>
+            </div>
+          </dialog>
+        )}
         {snapshot.error && (
           <div className="error-banner" role="alert">
             {snapshot.error}
-            <button onClick={start}>重试</button>
+            <button onClick={() => start(data.recorded)}>重试</button>
           </div>
         )}
 
@@ -351,9 +593,21 @@ export default function App() {
           <div className="history-area">
             <div className="label-row">
               <span className="eyebrow">音高轨迹</span>
-              <span className="muted small">最近 10 秒{frozen ? ' · 已冻结' : ''}</span>
+              <span className="muted small">
+                {formatTime(range.start)} — {formatTime(range.end)}
+                {frozen ? ' · 已冻结' : ''}
+              </span>
             </div>
-            <PitchHistory frames={displayedHistory} endTime={endTime} target={target} />
+            <TimeChart
+              data={data}
+              range={range}
+              kind="pitch"
+              target={target}
+              cursor={cursor}
+              revision={frozen ? 0 : snapshot.revision}
+              cutoff={frozen?.endTime ?? data.duration}
+              onSeek={seek}
+            />
           </div>
         </section>
 
@@ -446,16 +700,34 @@ export default function App() {
                 )}
               </div>
             </div>
-            <AnalysisChart
-              view={view}
-              frame={displayedFrame}
-              frames={displayedHistory}
-              endTime={endTime}
-              milliseconds={waveformWindow}
-              gain={gain}
-              frozen={!!frozen}
-              running={running}
-            />
+            {view !== 'spectrum' && (
+              <TimeChart
+                data={data}
+                range={range}
+                kind={view}
+                cursor={cursor}
+                revision={frozen ? 0 : snapshot.revision}
+                cutoff={frozen?.endTime ?? data.duration}
+                onSeek={seek}
+              />
+            )}
+            {view === 'waveform' && (
+              <p className="detail-caption">
+                实时振动细节 · 下图为最后采集的毫秒快照，不随历史播放变化
+              </p>
+            )}
+            {view !== 'spectrogram' && (
+              <AnalysisChart
+                view={view}
+                frame={displayedFrame}
+                frames={displayedHistory}
+                endTime={endTime}
+                milliseconds={waveformWindow}
+                gain={gain}
+                frozen={!!frozen}
+                running={running}
+              />
+            )}
             <div className="chart-footer">
               {view === 'spectrum' ? (
                 <div className="peak-list">
@@ -491,7 +763,7 @@ export default function App() {
                   : !running && displayedFrame
                     ? '已停止 · 保留最后画面'
                     : view === 'spectrogram'
-                      ? '最近 10 秒 · 空缺表示无采样'
+                      ? '会话时间 · 空缺表示无分析数据'
                       : view === 'spectrum' && frameSize
                         ? `频率间隔 ${frameSize.toFixed(2)} Hz`
                         : '悬停查看数值'}
@@ -500,6 +772,59 @@ export default function App() {
           </div>
         </section>
 
+        <section className="panel timeline-controls" aria-label="时间轴导航">
+          <div className="timeline-toolbar">
+            <label>
+              显示范围{' '}
+              <select
+                aria-label="时间轴范围"
+                value={windowSeconds}
+                onChange={(event) => {
+                  const seconds = Number(event.target.value);
+                  setWindowSeconds(seconds);
+                  setViewStart(range.start);
+                }}
+              >
+                <option value={10}>10 秒</option>
+                <option value={30}>30 秒</option>
+                <option value={60}>1 分钟</option>
+                <option value={300}>5 分钟</option>
+                <option value={0}>整段概览</option>
+              </select>
+            </label>
+            <button
+              onClick={() => {
+                setFrozen(null);
+                setFollowing(true);
+              }}
+            >
+              回到实时
+            </button>
+            <span className="muted small">
+              {following && !frozen ? '自动跟随' : active ? '正在回看 · 采集不受影响' : '正在回看'}{' '}
+              · 拖动下方波形或左右滚动定位
+            </span>
+            <label>
+              图像范围{' '}
+              <select
+                aria-label="图像范围"
+                value={imageScope}
+                disabled={view === 'spectrum'}
+                onChange={(event) => setImageScope(event.target.value)}
+              >
+                <option value="visible">当前可见范围</option>
+                <option value="whole">整段概览</option>
+              </select>
+            </label>
+            <button disabled={!data.duration} onClick={() => void exportImage()}>
+              保存 PNG
+            </button>
+          </div>
+          <Navigator data={data} range={range} revision={snapshot.revision} onNavigate={navigate} />
+          <p className="muted small">
+            停止录音后，点击音高曲线、声谱图或波形概览可跳转播放位置。刷新前请保存完整会话。
+          </p>
+        </section>
         <Piano
           target={target}
           detected={currentPitch?.midi ?? null}
@@ -514,7 +839,7 @@ export default function App() {
         <div className="bottom-row">
           <span>
             <ShieldCheck size={13} />
-            本地分析，不录音、不上传
+            本地处理 · 仅“开始录音”保存声音 · 不上传
           </span>
           <details className="capture-settings">
             <summary>

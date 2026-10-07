@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const preview = process.env.RUN_RECORDING_SOAK === '1' || process.env.USE_PREVIEW === '1';
+
 export default defineConfig({
   testDir: './tests/browser',
   timeout: 30000,
@@ -7,7 +9,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: preview ? 'http://127.0.0.1:4173' : 'http://127.0.0.1:5173',
     viewport: { width: 1440, height: 1100 },
     launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
     screenshot: 'only-on-failure',
@@ -18,8 +20,8 @@ export default defineConfig({
     { name: 'edge', use: { channel: 'msedge' } },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://127.0.0.1:5173',
+    command: preview ? 'npm run preview' : 'npm run dev',
+    url: preview ? 'http://127.0.0.1:4173' : 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 30000,
   },

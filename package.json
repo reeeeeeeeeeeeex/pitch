@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "test:soak": "node scripts/soak.mjs",
-    "format": "prettier --write src tests *.ts *.json index.html README.md"
+    "format": "prettier --write src tests *.ts *.json index.html README.md",
+    "test:recording-soak": "node scripts/recording-soak.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.52.0",
