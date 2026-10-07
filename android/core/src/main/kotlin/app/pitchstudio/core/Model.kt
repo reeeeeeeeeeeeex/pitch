@@ -21,7 +21,8 @@ data class AnalysisFrame(
     val waveform: FloatArray, val spectrum: FloatArray,
 )
 data class HistoryFrame(val time: Double, val hz: Float, val clarity: Float,
-    val rmsDb: Float, val peak: Float, val spectrum: ByteArray)
+    val rmsDb: Float, val peak: Float, val spectrum: ByteArray,
+    val breakBefore: Boolean = false, val gapBefore: Boolean = false)
 data class Envelope(val time: Double, val min: Float, val max: Float)
 data class TimeRange(val start: Double, val end: Double) { val span get() = max(.001, end - start) }
 enum class View { PITCH, SPECTROGRAM, WAVEFORM, SPECTRUM }

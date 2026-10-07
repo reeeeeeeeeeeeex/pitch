@@ -20,8 +20,7 @@ class AudioEngine(private val context: Context, private val repository: SessionR
             onFrame = { frame -> mutable.value = mutable.value.copy(frame = frame) },
             onFinished = { reason -> mutable.value = EngineState(session = session, frame = session.latest, message = reason) })
         pipeline = run
-        mutable.value = EngineState(active = true, session = session)
-        try { run.start() }
+        try { run.start { mutable.value = EngineState(active = true, session = session) } }
         catch (error: Exception) {
             session.close(); repository.delete(session.meta.id)
             mutable.value = EngineState(message = error.message ?: "无法开始采集")

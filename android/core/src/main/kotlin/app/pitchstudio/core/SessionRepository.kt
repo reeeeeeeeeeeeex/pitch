@@ -65,7 +65,10 @@ class SessionRepository(val root: File) {
     init {
         root.mkdirs()
         root.listFiles().orEmpty().filter { it.isDirectory && it.name.matches(Regex("[a-f0-9-]{36}")) }.forEach { dir ->
-            runCatching { open(dir.name).use { if (!it.meta.complete) it.recover() } }
+            runCatching {
+                val meta = gson.fromJson(File(dir, "meta.json").readText(), SessionMeta::class.java)
+                if (!meta.complete) open(dir.name).use { it.recover() }
+            }
         }
     }
     fun create(recorded: Boolean, settings: InputSettings): SessionHandle {
@@ -109,6 +112,9 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
     val wavFile = File(directory, "recording.wav")
     private val wav = if (meta.recorded) RandomAccessFile(wavFile, "rw") else null
     private val timestamps = ArrayList<Double>()
+    private val voicedBreaks = ArrayList<Int>()
+    private val gaps = ArrayList<Int>()
+    private var lastHz = 0f
     val envelopeIndex = EnvelopeIndex()
     private var envelopeMin = 1f; private var envelopeMax = -1f; private var envelopeCount = 0
     private var closed = false
@@ -118,7 +124,10 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
             if (!meta.complete) trimToCheckpoint()
             history.seek(0)
             val bytes = ByteArray(FRAME_BYTES)
-            while (history.filePointer + FRAME_BYTES <= history.length()) { history.readFully(bytes); timestamps.add(little(FRAME_BYTES).apply { put(bytes); flip() }.double) }
+            while (history.filePointer + FRAME_BYTES <= history.length()) {
+                history.readFully(bytes); val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+                indexFrame(b.double, b.float)
+            }
             envelopes.seek(0)
             val e = ByteArray(16)
             while (envelopes.filePointer + 16 <= envelopes.length()) {
@@ -160,7 +169,18 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
             .putFloat(frame.pitch?.clarity?.toFloat() ?: 0f).putFloat(frame.rmsDb.coerceAtLeast(-160f)).putFloat(frame.peak)
             .put(quantizeSpectrum(frame.spectrum)).array()
         history.seek(history.length()); history.write(bytes)
-        timestamps.add(frame.time); latest = frame
+        indexFrame(frame.time, frame.pitch?.hz?.toFloat() ?: 0f); latest = frame
+    }
+    private fun indexFrame(time: Double, hz: Float) {
+        val gap = timestamps.lastOrNull()?.let { time - it > .15 } ?: false
+        if (gap) gaps.add(timestamps.size)
+        if (hz > 0 && (gap || lastHz <= 0)) voicedBreaks.add(timestamps.size)
+        timestamps.add(time); lastHz = hz
+    }
+    private fun crosses(indices: List<Int>, after: Int, through: Int): Boolean {
+        val found = indices.binarySearch(after + 1)
+        val index = if (found < 0) -found - 1 else found
+        return index < indices.size && indices[index] <= through
     }
     @Synchronized fun frames(range: TimeRange, maxPoints: Int = 2000): List<HistoryFrame> {
         val begin = max(0, lowerBound(range.start) - 1)
@@ -168,10 +188,13 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
         val step = max(1, ceil((end - begin).toDouble() / max(1, maxPoints)).toInt())
         val bytes = ByteArray(FRAME_BYTES)
         val result = ArrayList<HistoryFrame>()
+        var previous = begin - 1
         for (i in begin until end step step) {
             history.seek(i.toLong() * FRAME_BYTES); history.readFully(bytes)
             val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-            result.add(HistoryFrame(b.double, b.float, b.float, b.float, b.float, ByteArray(BANDS).also { b.get(it) }))
+            result.add(HistoryFrame(b.double, b.float, b.float, b.float, b.float, ByteArray(BANDS).also { b.get(it) },
+                crosses(voicedBreaks, previous, i), crosses(gaps, previous, i)))
+            previous = i
         }
         return result
     }

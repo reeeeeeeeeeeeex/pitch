@@ -37,9 +37,9 @@ class CapturePipeline(
     private lateinit var writerThread: Thread
     private lateinit var analysisThread: Thread
 
-    fun start() {
+    fun start(onStarted: () -> Unit = {}) {
         check(running.compareAndSet(false, true))
-        try { source.start() } catch (error: Exception) { running.set(false); source.close(); throw error }
+        try { source.start(); onStarted() } catch (error: Exception) { running.set(false); source.close(); throw error }
         analysisThread = Thread({
             val processor = AnalysisProcessor()
             while (!written.get() || pending.get() != null) {
