@@ -2,12 +2,12 @@ package app.pitchstudio.android
 
 import android.app.Application
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.pitchstudio.android.audio.AudioEngine
 import app.pitchstudio.android.audio.PianoEngine
+import app.pitchstudio.android.audio.RecordingPlayer
 import app.pitchstudio.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -34,7 +34,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
     private val mutable = MutableStateFlow(StudioState(sessions = repository.list()))
     val state = mutable.asStateFlow()
     private var current: SessionHandle? = null
-    private var player: MediaPlayer? = null
+    private var player: RecordingPlayer? = null
     private var frozenFrame: AnalysisFrame? = null
     private var cutoff: Double? = null
     private var viewStart = 0.0
@@ -166,15 +166,15 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     fun play() {
-        if (state.value.active || current?.meta?.recorded != true) return
+        if (state.value.active || state.value.busy || current?.meta?.recorded != true) return
         try {
-            if (player == null) player = MediaPlayer().apply {
-                setDataSource(current!!.wavFile.absolutePath); prepare()
-                setOnCompletionListener { mutable.update { s -> s.copy(playing = false) } }
+            if (player == null) player = RecordingPlayer(current!!,
+                completed = { mutable.update { s -> s.copy(playing = false) } },
+                failed = { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "播放失败，请重试") } }).apply {
                 state.value.cursor?.let { seekTo((it * 1000).toInt()) }
             }
             if (player!!.isPlaying) pause() else { player!!.start(); mutable.update { it.copy(playing = true) } }
-        } catch (e: Exception) { message("播放失败：${e.message}") }
+        } catch (e: Exception) { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "播放失败：${e.message}") } }
     }
     fun pause() { player?.let { runCatching { if (it.isPlaying) it.pause() } }; mutable.update { it.copy(playing = false) } }
     fun seek(time: Double) {

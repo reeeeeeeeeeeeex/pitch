@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     private val png = registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { it?.let { uri -> studio.exportImage(uri, wholeImage) } }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         lifecycleScope.launch { studio.state.collect {
             if (it.active) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

@@ -195,6 +195,7 @@ val Coral = Color(0xffdc6963)
             remember { vm.devices() }.forEach { (id, label) -> TextButton(onClick = { vm.selectDevice(id) }) { Text((if (s.deviceId == id) "✓ " else "") + label) } }
             s.meta?.settings?.let { Text("${it.source} · ${it.sampleRate} Hz\n回声消除：${it.echoCancellation ?: "未知"}\n降噪：${it.noiseSuppression ?: "未知"}\n自动增益：${it.autoGainControl ?: "未知"}", fontSize = 13.sp, color = Secondary) }
             Spacer(Modifier.height(16.dp)); Text("声音在本机处理。锁屏或切到其他 App 会结束采集并保留结果。每次最长 30 分钟。", color = Secondary, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp)); Text("回放会自动提升偏小的录音音量，最高约 24 dB。保存的录音、导出的 WAV 和分析图保留原始电平。", color = Secondary, fontSize = 13.sp)
             Spacer(Modifier.height(12.dp)); Text("钢琴：Salamander Grand Piano / Alexander Holm / CC BY 3.0\n音高算法：Pitchy / Ian Johnson / MIT", fontSize = 12.sp, color = Secondary)
         }
     }
