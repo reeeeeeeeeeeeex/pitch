@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { frequencyAt, frequencyRatio, noteName } from '../audio/analysis';
 import { formatTime, type SessionData, type TimeRange } from '../audio/history';
@@ -133,7 +134,7 @@ export function drawTimePlot(
       ctx.fillText(String(value), LEFT - 8, y(value) + 4);
     }
     ctx.textAlign = 'left';
-    ctx.fillText('Amplitude', 8, 13);
+    ctx.fillText(t('Amplitude'), 8, 13);
     ctx.save();
     ctx.beginPath();
     ctx.rect(LEFT, TOP, w, h);
@@ -194,9 +195,11 @@ export function TimeChart({
   onPitchPan?: (low: number) => void;
   onPitchDragChange?: (dragging: boolean) => void;
 }) {
+  const language = useLanguage();
   const ref = useRef<HTMLCanvasElement>(null),
     [width, setWidth] = useState(600),
     [hover, setHover] = useState<string | null>(null);
+  useEffect(() => setHover(null), [language]);
   const drag = useRef<{ pointer: number; y: number; low: number } | null>(null);
   const ignoreClick = useRef(false);
   const wheelRemainder = useRef(0);
@@ -235,6 +238,7 @@ export function TimeChart({
     drawTimePlot(ctx, width, height, data, range, kind, target, cursor, cutoff, pitchLow);
   }, [
     data,
+    language,
     range.start,
     range.end,
     kind,
@@ -267,10 +271,14 @@ export function TimeChart({
         data-testid={`time-${kind}`}
         aria-label={
           kind === 'pitch'
-            ? `Session pitch trace, ${noteName(pitchLow)} to ${noteName(pitchLow + PITCH_SPAN)}, one semitone per line`
+            ? t(
+                'Session pitch trace, {0} to {1}, one semitone per line',
+                noteName(pitchLow),
+                noteName(pitchLow + PITCH_SPAN),
+              )
             : kind === 'spectrogram'
-              ? 'Session spectrogram'
-              : 'Continuous waveform overview'
+              ? t('Session spectrogram')
+              : t('Continuous waveform overview')
         }
         onKeyDown={(event) => {
           if (!onPitchPan) return;
@@ -332,7 +340,7 @@ export function TimeChart({
             ),
           );
           setHover(
-            `${formatTime(time, true)}${kind === 'pitch' ? (frame?.hz ? ` · ${noteName(Math.round(69 + 12 * Math.log2(frame.hz / 440)))} · ${frame.hz.toFixed(1)} Hz` : ' · No steady pitch') : kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : 'No analysis data'}` : ''}`,
+            `${formatTime(time, true)}${kind === 'pitch' ? (frame?.hz ? ` · ${noteName(Math.round(69 + 12 * Math.log2(frame.hz / 440)))} · ${frame.hz.toFixed(1)} Hz` : t(' · No steady pitch')) : kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : t('No analysis data')}` : ''}`,
           );
         }}
       />
@@ -389,9 +397,9 @@ export function Navigator({
         />
       </div>
       <label className="nav-slider">
-        Browse history
+        {t('Browse history')}
         <input
-          aria-label="Browse history"
+          aria-label={t('Browse history')}
           type="range"
           min={0}
           max={Math.max(0, data.duration - (range.end - range.start))}
@@ -431,14 +439,28 @@ export async function saveImage(
   ctx.fillStyle = '#e2edd9';
   ctx.font = '26px sans-serif';
   ctx.fillText(
-    `Pitch Studio · ${view === 'spectrum' ? 'Spectrum snapshot' : view === 'spectrogram' ? 'Spectrogram' : 'Waveform overview'}`,
+    t(
+      'Pitch Studio · {0}',
+      view === 'spectrum'
+        ? t('Spectrum snapshot')
+        : view === 'spectrogram'
+          ? t('Spectrogram')
+          : t('Waveform overview'),
+    ),
     62,
     45,
   );
   ctx.font = '15px sans-serif';
   ctx.fillStyle = '#a3afa1';
   ctx.fillText(
-    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  48 kHz  |  Pitch range ${noteName(low)} — ${noteName(low + PITCH_SPAN)}`,
+    t(
+      '{0}  |  {1} — {2}  |  48 kHz  |  Pitch range {3} — {4}',
+      data.name,
+      formatTime(range.start, true),
+      formatTime(range.end, true),
+      noteName(low),
+      noteName(low + PITCH_SPAN),
+    ),
     62,
     78,
   );
@@ -475,8 +497,8 @@ export async function saveImage(
   }
   ctx.fillText(
     view === 'spectrum'
-      ? 'X: Hz (log scale) · Y: dB · Spectrum shows the current snapshot'
-      : 'X: session time (mm:ss) · Gaps indicate missing analysis',
+      ? t('X: Hz (log scale) · Y: dB · Spectrum shows the current snapshot')
+      : t('X: session time (mm:ss) · Gaps indicate missing analysis'),
     670,
     1198,
   );

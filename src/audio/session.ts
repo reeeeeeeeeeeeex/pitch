@@ -161,7 +161,7 @@ export class AudioSession {
       worklet.connect(context.destination);
       this.nodes = [source, mono, this.timeAnalyser, this.frequencyAnalyser, worklet];
       data.settings = track.getSettings();
-      this.publish({ settings: data.settings, deviceLabel: track.label || 'Microphone' });
+      this.publish({ settings: data.settings, deviceLabel: track.label });
       worklet.port.onmessage = ({ data: message }) => {
         if (generation !== this.generation) return;
         if (message.type === 'started') {

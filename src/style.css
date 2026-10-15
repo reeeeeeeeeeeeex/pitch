@@ -107,6 +107,19 @@ select {
   align-items: center;
   gap: 29px;
 }
+.language-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b2baac;
+}
+.language-picker select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 6px;
+  font-size: 12px;
+}
 .privacy {
   color: #8c9885;
   font-size: 11px;
@@ -1183,6 +1196,12 @@ main {
     border-radius: 8px;
   }
   .help-button span {
+    display: none;
+  }
+  .header-right {
+    gap: 12px;
+  }
+  .language-picker > svg {
     display: none;
   }
   main {

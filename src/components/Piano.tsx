@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n';
 import { memo } from 'react';
 import { Headphones, RotateCcw } from 'lucide-react';
 import { noteName } from '../audio/analysis';
@@ -18,13 +19,14 @@ export const Piano = memo(function Piano({
   onPlay: (midi: number) => void;
   onClear: () => void;
 }) {
+  useLanguage();
   const key = (midi: number, black: boolean) => {
     const before = WHITES.filter((white) => white < midi).length;
     return (
       <button
         key={midi}
         type="button"
-        aria-label={`Play ${noteName(midi)}`}
+        aria-label={t('Play {0}', noteName(midi))}
         aria-pressed={target === midi}
         className={`piano-key ${black ? 'black' : 'white'} ${target === midi ? 'target' : ''} ${detected === midi ? 'detected' : ''}`}
         style={
@@ -51,28 +53,32 @@ export const Piano = memo(function Piano({
     <section className="panel piano-panel" aria-labelledby="piano-title">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">REFERENCE</span>
-          <h2 id="piano-title">Pick a note and sing along</h2>
+          <span className="eyebrow">{t('REFERENCE')}</span>
+          <h2 id="piano-title">{t('Pick a note and sing along')}</h2>
         </div>
         <div className="piano-legend">
           <span>
             <i className="legend-dot target-dot" />
-            Target note
+            {t('Target note')}
           </span>
           <span>
             <i className="legend-dot detected-dot" />
-            Detected note
+            {t('Detected note')}
           </span>
           {target !== null && (
             <button className="text-button" onClick={onClear}>
               <RotateCcw size={13} />
-              Clear target
+              {t('Clear target')}
             </button>
           )}
         </div>
       </div>
       <div className="piano-scroll">
-        <div className="piano-keyboard" role="group" aria-label="88-key reference piano, A0 to C8">
+        <div
+          className="piano-keyboard"
+          role="group"
+          aria-label={t('88-key reference piano, A0 to C8')}
+        >
           <div className="white-keys">{WHITES.map((midi) => key(midi, false))}</div>
           {PIANO_KEYS.filter(isBlackKey).map((midi) => key(midi, true))}
         </div>
@@ -80,15 +86,16 @@ export const Piano = memo(function Piano({
       <div className="piano-footer">
         <span>
           <Headphones size={14} />
-          Use headphones to keep reference notes out of the microphone
+          {t('Use headphones to keep reference notes out of the microphone')}
         </span>
         <span>
-          88 keys · A0 — C8 <b>·</b> A4 = 440 Hz
+          {t('88 keys · A0 — C8')}
+          <b>·</b> A4 = 440 Hz
         </span>
       </div>
       <div className="piano-sound">
         <span>
-          Sound:{' '}
+          {t('Sound:')}{' '}
           <a
             href={`${import.meta.env.BASE_URL}piano/salamander/ATTRIBUTION.txt`}
             target="_blank"
@@ -97,7 +104,9 @@ export const Piano = memo(function Piano({
             Salamander Grand Piano · Alexander Holm · CC BY 3.0
           </a>
         </span>
-        <span role="status">{loading ? 'Loading piano samples…' : 'Sampled grand piano'}</span>
+        <span role="status">
+          {loading ? t('Loading piano samples…') : t('Sampled grand piano')}
+        </span>
       </div>
     </section>
   );

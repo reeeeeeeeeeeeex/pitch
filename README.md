@@ -6,7 +6,9 @@ A local-first voice practice tool for the web and Android, with real-time pitch 
 
 Hold a note, see how it moves, and compare it with a piano reference. Explore the frequencies in your voice, review a recording, or save a session to pick up where you left off. Audio is processed on your device, with no account, backend, or cloud audio service required.
 
-The web app uses React, TypeScript, Vite, Web Audio, and Canvas 2D. The independent [native Android app](android/README.md) uses Kotlin and Jetpack Compose, runs offline on Android 10+, and exchanges `.pitchsession` files with the web app. Both interfaces are in English; documentation is available in English and Simplified Chinese.
+The web app uses React, TypeScript, Vite, Web Audio, and Canvas 2D. The independent [native Android app](android/README.md) uses Kotlin and Jetpack Compose, runs offline on Android 10+, and exchanges `.pitchsession` files with the web app. Both interfaces and their documentation are available in English and Simplified Chinese.
+
+Use the language selector in the web header or the language icon in the Android toolbar to switch between **English** and **简体中文**. English is the default; your choice is saved on the device. Switching updates the interface and chart exports immediately while keeping the current recording, playback position, and display settings.
 
 ## What you can do
 

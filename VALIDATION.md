@@ -1,3 +1,12 @@
+# 2026-10-15: English / Simplified Chinese language switching
+
+- Added an English / 简体中文 selector to the header. English is the default; the choice persists locally, updates the document language and description, and works for the current session even when storage is blocked.
+- Localized built-in controls, help, errors, accessibility labels, canvas text, and PNG captions. Switching preserves the microphone stream, current recording, frozen display, target note, and loaded session. Device labels and saved session names are kept as data.
+- Production build and all 51 unit tests passed. Chrome/Edge regression: 34 passed and 6 opt-in long-running tests skipped. After completing the remaining labels and adding a Chinese PNG export check, all 4 language browser cases passed again. Artifacts: `.local/language-browser-full/` and `.local/language-browser-final/`.
+- Visually checked English and Chinese mobile layouts and the Chinese PNG export. All 24 local links across the four READMEs resolve. Tests used synthetic audio; no new real-microphone or long-duration run was performed.
+
+---
+
 # 2026-10-15: English interface and bilingual documentation
 
 - Translated built-in UI copy, accessibility labels, capture/import errors, chart labels, PNG exports, and new-session names into English. Set the document language to `en` and updated the page description and Windows launcher name.

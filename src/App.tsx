@@ -1,3 +1,4 @@
+import { t, useLanguage, setLanguage, translateMessage } from './i18n';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   Activity,
@@ -6,6 +7,7 @@ import {
   ChevronDown,
   CircleHelp,
   Headphones,
+  Languages,
   Mic,
   Pause,
   Play,
@@ -32,39 +34,45 @@ import {
   PITCH_MAX_LOW,
 } from './audio/pitch-viewport';
 
-const VIEWS = [
-  {
-    id: 'spectrum' as const,
-    name: 'Spectrum',
-    icon: ChartNoAxesCombined,
-    subtitle: 'Explore the frequencies in your voice',
-    helper: 'Frequency on the x-axis · Relative level on the y-axis',
-  },
-  {
-    id: 'spectrogram' as const,
-    name: 'Spectrogram',
-    icon: AudioLines,
-    subtitle: 'See how your sound changes over time',
-    helper: 'Time on the x-axis · Frequency on the y-axis · Color shows level',
-  },
-  {
-    id: 'waveform' as const,
-    name: 'Waveform',
-    icon: Waves,
-    subtitle: 'See the shape of your sound',
-    helper: 'Time on the x-axis · Sample amplitude on the y-axis',
-  },
-];
-
 interface FrozenView {
   frames: AnalysisFrame[];
   frame: AnalysisFrame;
   endTime: number;
 }
 const settingLabel = (value: boolean | string | undefined) =>
-  value === undefined ? 'Not reported' : typeof value === 'string' ? value : value ? 'On' : 'Off';
+  value === undefined
+    ? t('Not reported')
+    : typeof value === 'string'
+      ? value
+      : value
+        ? t('On')
+        : t('Off');
 
 export default function App() {
+  const language = useLanguage();
+  const VIEWS = [
+    {
+      id: 'spectrum' as const,
+      name: t('Spectrum'),
+      icon: ChartNoAxesCombined,
+      subtitle: t('Explore the frequencies in your voice'),
+      helper: t('Frequency on the x-axis · Relative level on the y-axis'),
+    },
+    {
+      id: 'spectrogram' as const,
+      name: t('Spectrogram'),
+      icon: AudioLines,
+      subtitle: t('See how your sound changes over time'),
+      helper: t('Time on the x-axis · Frequency on the y-axis · Color shows level'),
+    },
+    {
+      id: 'waveform' as const,
+      name: t('Waveform'),
+      icon: Waves,
+      subtitle: t('See the shape of your sound'),
+      helper: t('Time on the x-axis · Sample amplitude on the y-axis'),
+    },
+  ];
   const [session] = useState(() => new AudioSession());
   const [piano] = useState(() => new ReferencePiano());
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
@@ -307,36 +315,47 @@ export default function App() {
   };
   const noteStatus = !currentPitch
     ? running
-      ? 'No steady pitch detected'
-      : 'Ready when you are'
+      ? t('No steady pitch detected')
+      : t('Ready when you are')
     : deviation !== null && Math.abs(deviation) <= 5
-      ? 'In tune. Hold it there.'
+      ? t('In tune. Hold it there.')
       : deviation! > 0
-        ? 'Try singing a little lower'
-        : 'Try singing a little higher';
+        ? t('Try singing a little lower')
+        : t('Try singing a little higher');
 
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#" aria-label="Pitch Studio home">
+        <a className="brand" href="#" aria-label={t('Pitch Studio home')}>
           <span className="brand-mark">
             <Activity size={23} strokeWidth={1.7} />
           </span>
-          <h1>Pitch Studio</h1>
+          <h1>{t('Pitch Studio')}</h1>
         </a>
         <div className="header-right">
+          <label className="language-picker">
+            <Languages size={16} aria-hidden="true" />
+            <select
+              aria-label="Language / 语言"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value === 'zh-CN' ? 'zh-CN' : 'en')}
+            >
+              <option value="en">English</option>
+              <option value="zh-CN">简体中文</option>
+            </select>
+          </label>
           <span className="privacy">
             <ShieldCheck size={14} />
-            Your audio stays on your device
+            {t('Your audio stays on your device')}
           </span>
           <button
             className="help-button"
-            aria-label="Quick guide"
+            aria-label={t('Quick guide')}
             aria-expanded={showHelp}
             onClick={() => setShowHelp(!showHelp)}
           >
             <CircleHelp size={17} />
-            <span>Quick guide</span>
+            <span>{t('Quick guide')}</span>
           </button>
         </div>
       </header>
@@ -346,47 +365,53 @@ export default function App() {
           <aside className="help-panel">
             <div>
               <Headphones size={18} />
-              <strong>Get started in three steps</strong>
+              <strong>{t('Get started in three steps')}</strong>
             </div>
-            <button aria-label="Close guide" onClick={() => setShowHelp(false)}>
+            <button aria-label={t('Close guide')} onClick={() => setShowHelp(false)}>
               <X size={16} />
             </button>
             <p>
-              1. Turn on your microphone and allow access. 2. Hold a note and explore the three
-              views. 3. Play a piano key, then sing along to match its pitch.
+              {t(
+                '1. Turn on your microphone and allow access. 2. Hold a note and explore the three views. 3. Play a piano key, then sing along to match its pitch.',
+              )}
             </p>
             <p>
-              The spectrum shows the strength of each frequency, the spectrogram tracks changes over
-              time, and the waveform shows the signal itself. Freeze pauses the display; Stop
-              microphone ends capture.
+              {t(
+                'The spectrum shows the strength of each frequency, the spectrogram tracks changes over time, and the waveform shows the signal itself. Freeze pauses the display; Stop microphone ends capture.',
+              )}
             </p>
             <p>
-              Designed for one voice at a time. Levels describe the digital signal, not room sound
-              pressure. Your device may also process the input.
+              {t(
+                'Designed for one voice at a time. Levels describe the digital signal, not room sound pressure. Your device may also process the input.',
+              )}
             </p>
           </aside>
         )}
 
-        <section className="input-strip" aria-label="Microphone controls">
+        <section className="input-strip" aria-label={t('Microphone controls')}>
           <div className="input-icon">
             <Mic size={19} />
           </div>
           <div className="input-device">
-            <label htmlFor="microphone">Audio input</label>
+            <label htmlFor="microphone">{t('Audio input')}</label>
             <div className="select-wrapper">
               <select
                 id="microphone"
                 value={deviceId}
                 disabled={active || fileBusy}
                 onChange={(event) => setDeviceId(event.target.value)}
-                title={running ? 'Stop the microphone to change devices' : 'Choose an input device'}
+                title={
+                  running ? t('Stop the microphone to change devices') : t('Choose an input device')
+                }
               >
-                <option value="">{running ? snapshot.deviceLabel : 'Default microphone'}</option>
+                <option value="">
+                  {running ? snapshot.deviceLabel || t('Microphone') : t('Default microphone')}
+                </option>
                 {devices
                   .filter((device) => device.deviceId && device.deviceId !== 'default')
                   .map((device, index) => (
                     <option key={device.deviceId} value={device.deviceId}>
-                      {device.label || `Microphone ${index + 1}`}
+                      {device.label || t('Microphone {0}', index + 1)}
                     </option>
                   ))}
               </select>
@@ -402,13 +427,13 @@ export default function App() {
             <span>
               {running
                 ? data.recorded
-                  ? 'Recording'
-                  : 'Analyzing · Audio is not being recorded'
+                  ? t('Recording')
+                  : t('Analyzing · Audio is not being recorded')
                 : requesting
-                  ? 'Waiting for microphone permission'
+                  ? t('Waiting for microphone permission')
                   : snapshot.status === 'error'
-                    ? 'Input disconnected'
-                    : 'Microphone off'}
+                    ? t('Input disconnected')
+                    : t('Microphone off')}
             </span>
           </div>
           {running && (
@@ -423,12 +448,12 @@ export default function App() {
           >
             {running || requesting ? <Square size={15} fill="currentColor" /> : <Mic size={17} />}
             {running
-              ? 'Stop microphone'
+              ? t('Stop microphone')
               : requesting
-                ? 'Cancel'
+                ? t('Cancel')
                 : snapshot.status === 'stopping'
-                  ? 'Finishing…'
-                  : 'Start microphone'}
+                  ? t('Finishing…')
+                  : t('Start microphone')}
           </button>
           {!active && (
             <button
@@ -436,24 +461,24 @@ export default function App() {
               disabled={fileBusy}
               onClick={() => start(true)}
             >
-              ● Start recording
+              {t('● Start recording')}
             </button>
           )}
         </section>
-        <section className="session-tools panel" aria-label="Session and exports">
+        <section className="session-tools panel" aria-label={t('Session and exports')}>
           <div className="session-info">
             <strong data-testid="session-duration">{formatTime(data.duration, true)}</strong>
             <span>
               {active
                 ? data.recorded
-                  ? 'Recording · WAV 48 kHz / mono / 16-bit'
-                  : 'Analyze only'
+                  ? t('Recording · WAV 48 kHz / mono / 16-bit')
+                  : t('Analyze only')
                 : data.duration
                   ? data.recorded
-                    ? 'Recording ready'
-                    : 'Analysis ready'
-                  : 'Start the microphone to analyze, or record to keep the audio'}{' '}
-              · Up to 30 minutes
+                    ? t('Recording ready')
+                    : t('Analysis ready')
+                  : t('Start the microphone to analyze, or record to keep the audio')}{' '}
+              {t('· Up to 30 minutes')}
             </span>
           </div>
           <div className="session-actions">
@@ -461,18 +486,18 @@ export default function App() {
               disabled={active || fileBusy || !data.wav}
               onClick={() => downloadBlob(data.wav!, data.name + '.wav')}
             >
-              Download WAV
+              {t('Download WAV')}
             </button>
             <button disabled={active || fileBusy || !data.duration} onClick={saveSession}>
-              Save session
+              {t('Save session')}
             </button>
             <button disabled={active || fileBusy} onClick={() => importRef.current?.click()}>
-              {fileBusy ? 'Opening…' : 'Open session'}
+              {fileBusy ? t('Opening…') : t('Open session')}
             </button>
             <input
               ref={importRef}
               hidden
-              aria-label="Import session file"
+              aria-label={t('Import session file')}
               type="file"
               accept=".pitchsession"
               onChange={(event) => {
@@ -483,16 +508,16 @@ export default function App() {
             />
             <span className="muted small">
               {snapshot.dirty
-                ? 'Unsaved session'
+                ? t('Unsaved session')
                 : data.duration
-                  ? 'Session saved or opened from a file'
-                  : 'Files are processed on your device'}
+                  ? t('Session saved or opened from a file')
+                  : t('Files are processed on your device')}
             </span>
           </div>
           {!active && audioUrl && (
             <audio
               ref={audioRef}
-              aria-label="Recording playback"
+              aria-label={t('Recording playback')}
               controls
               src={audioUrl}
               onTimeUpdate={(event) => {
@@ -508,7 +533,9 @@ export default function App() {
             />
           )}
           {(snapshot.notice || fileError) && (
-            <p role={fileError ? 'alert' : 'status'}>{fileError || snapshot.notice}</p>
+            <p role={fileError ? 'alert' : 'status'}>
+              {translateMessage(fileError || snapshot.notice || '')}
+            </p>
           )}
         </section>
         {pending && (
@@ -522,10 +549,11 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="unsaved-title"
           >
-            <h2 id="unsaved-title">Save this session?</h2>
+            <h2 id="unsaved-title">{t('Save this session?')}</h2>
             <p>
-              This session has not been saved. Continuing will replace it. A WAV or PNG alone cannot
-              restore all of your analysis data.
+              {t(
+                'This session has not been saved. Continuing will replace it. A WAV or PNG alone cannot restore all of your analysis data.',
+              )}
             </p>
             <div>
               <button
@@ -537,7 +565,7 @@ export default function App() {
                   action();
                 }}
               >
-                Save and continue
+                {t('Save and continue')}
               </button>
               <button
                 onClick={() => {
@@ -546,24 +574,24 @@ export default function App() {
                   action();
                 }}
               >
-                Discard and continue
+                {t('Discard and continue')}
               </button>
-              <button onClick={() => setPending(null)}>Cancel</button>
+              <button onClick={() => setPending(null)}>{t('Cancel')}</button>
             </div>
           </dialog>
         )}
         {snapshot.error && (
           <div className="error-banner" role="alert">
-            {snapshot.error}
-            <button onClick={() => start(data.recorded)}>Retry</button>
+            {translateMessage(snapshot.error)}
+            <button onClick={() => start(data.recorded)}>{t('Retry')}</button>
           </div>
         )}
 
-        <section className="panel tuner-panel" aria-label="Live tuner">
+        <section className="panel tuner-panel" aria-label={t('Live tuner')}>
           <div className="tuner-readout">
             <div className="label-row">
-              <span className="eyebrow">Live pitch</span>
-              <span className={`live-tag ${running ? 'on' : ''}`}>LIVE</span>
+              <span className="eyebrow">{t('Live pitch')}</span>
+              <span className={`live-tag ${running ? 'on' : ''}`}>{t('LIVE')}</span>
             </div>
             <div className="note-line">
               <span className="current-note" data-testid="pitch-note">
@@ -587,13 +615,13 @@ export default function App() {
           <div className="tuning-center">
             <div className="label-row">
               <span className="eyebrow">
-                {target === null ? 'Pitch offset' : `Offset from ${noteName(target)}`}
+                {target === null ? t('Pitch offset') : t('Offset from {0}', noteName(target))}
               </span>
               <span className="cents-value" data-testid="cents">
                 {deviation === null
                   ? '—'
                   : `${deviation >= 0 ? '+' : '−'}${Math.abs(deviation).toFixed(1)}`}
-                <small> cents</small>
+                <small> {t('cents')}</small>
               </span>
             </div>
             <div className="tuning-meter">
@@ -613,19 +641,19 @@ export default function App() {
             </div>
             <div className="tuning-labels">
               <span>
-                −50 <small>Flat</small>
+                −50 <small>{t('Flat')}</small>
               </span>
               <span>0</span>
               <span>
-                <small>Sharp</small> +50
+                <small>{t('Sharp')}</small> +50
               </span>
             </div>
             <div className="level-row">
-              <span>Input level</span>
+              <span>{t('Input level')}</span>
               <div
                 className="level-meter"
                 role="meter"
-                aria-label="Microphone input level"
+                aria-label={t('Microphone input level')}
                 aria-valuemin={-60}
                 aria-valuemax={0}
                 aria-valuenow={Number.isFinite(db) ? Math.max(-60, Math.min(0, db)) : -60}
@@ -639,21 +667,21 @@ export default function App() {
             </div>
             {snapshot.frame && snapshot.frame.peak >= 0.99 && (
               <span className="clip-warning">
-                Input is close to clipping. Lower your microphone gain.
+                {t('Input is close to clipping. Lower your microphone gain.')}
               </span>
             )}
           </div>
           <div className="history-area">
             <div className="label-row">
-              <span className="eyebrow">Pitch trace</span>
+              <span className="eyebrow">{t('Pitch trace')}</span>
               <span className="muted small">
                 {formatTime(range.start)} — {formatTime(range.end)}
-                {frozen ? ' · Frozen' : ''}
+                {frozen ? t(' · Frozen') : ''}
               </span>
             </div>
             <div className="pitch-controls">
               <span className="pitch-range" role="status">
-                {noteName(pitchLow)} — {noteName(pitchLow + PITCH_SPAN)} · Two octaves
+                {noteName(pitchLow)} — {noteName(pitchLow + PITCH_SPAN)} {t('· Two octaves')}
               </span>
             </div>
             <div className="pitch-viewport">
@@ -672,8 +700,8 @@ export default function App() {
               />
               <div className="pitch-scrollbar">
                 <button
-                  aria-label="Move pitch range up one semitone"
-                  title="Move pitch range up one semitone"
+                  aria-label={t('Move pitch range up one semitone')}
+                  title={t('Move pitch range up one semitone')}
                   disabled={pitchLow === PITCH_MAX_LOW}
                   onClick={() => panPitch(pitchLow + 1)}
                 >
@@ -681,9 +709,13 @@ export default function App() {
                 </button>
                 <input
                   type="range"
-                  aria-label="Pitch display range"
+                  aria-label={t('Pitch display range')}
                   aria-orientation="vertical"
-                  aria-valuetext={`${noteName(pitchLow)} to ${noteName(pitchLow + PITCH_SPAN)}`}
+                  aria-valuetext={t(
+                    '{0} to {1}',
+                    noteName(pitchLow),
+                    noteName(pitchLow + PITCH_SPAN),
+                  )}
                   min={PITCH_MIN_LOW}
                   max={PITCH_MAX_LOW}
                   step={1}
@@ -695,8 +727,8 @@ export default function App() {
                   onLostPointerCapture={() => setPitchDragging(false)}
                 />
                 <button
-                  aria-label="Move pitch range down one semitone"
-                  title="Move pitch range down one semitone"
+                  aria-label={t('Move pitch range down one semitone')}
+                  title={t('Move pitch range down one semitone')}
                   disabled={pitchLow === PITCH_MIN_LOW}
                   onClick={() => panPitch(pitchLow - 1)}
                 >
@@ -705,15 +737,16 @@ export default function App() {
               </div>
             </div>
             <p className="pitch-hint">
-              Follows your pitch live. During playback, drag vertically to adjust the range or click
-              the trace to seek.
+              {t(
+                'Follows your pitch live. During playback, drag vertically to adjust the range or click the trace to seek.',
+              )}
             </p>
           </div>
         </section>
 
-        <section className="panel analysis-panel" aria-label="Audio visualizations">
+        <section className="panel analysis-panel" aria-label={t('Audio visualizations')}>
           <div className="analysis-toolbar">
-            <div className="tabs" role="tablist" aria-label="Audio analysis views">
+            <div className="tabs" role="tablist" aria-label={t('Audio analysis views')}>
               {VIEWS.map((item, index) => (
                 <button
                   key={item.id}
@@ -752,7 +785,7 @@ export default function App() {
               aria-pressed={!!frozen}
             >
               {frozen ? <Play size={13} /> : <Pause size={13} />}
-              {frozen ? 'Resume display' : 'Freeze display'}
+              {frozen ? t('Resume display') : t('Freeze display')}
             </button>
           </div>
           <div id="analysis-content" role="tabpanel" aria-labelledby={`tab-${view}`} tabIndex={0}>
@@ -765,9 +798,9 @@ export default function App() {
                 {view === 'waveform' ? (
                   <>
                     <label>
-                      Window
+                      {t('Window')}
                       <select
-                        aria-label="Waveform time window"
+                        aria-label={t('Waveform time window')}
                         value={waveformWindow}
                         onChange={(event) => setMilliseconds(Number(event.target.value))}
                       >
@@ -779,9 +812,9 @@ export default function App() {
                       </select>
                     </label>
                     <label>
-                      Zoom
+                      {t('Zoom')}
                       <select
-                        aria-label="Waveform zoom"
+                        aria-label={t('Waveform zoom')}
                         value={gain}
                         onChange={(event) => setGain(Number(event.target.value))}
                       >
@@ -795,7 +828,7 @@ export default function App() {
                   </>
                 ) : (
                   <span className="range-label">
-                    50 Hz — 8 kHz <span>·</span> Log scale
+                    50 Hz — 8 kHz <span>·</span> {t('Log scale')}
                   </span>
                 )}
               </div>
@@ -813,7 +846,7 @@ export default function App() {
             )}
             {view === 'waveform' && (
               <p className="detail-caption">
-                Waveform detail · Latest captured snapshot; does not follow playback
+                {t('Waveform detail · Latest captured snapshot; does not follow playback')}
               </p>
             )}
             {view !== 'spectrogram' && (
@@ -831,7 +864,7 @@ export default function App() {
             <div className="chart-footer">
               {view === 'spectrum' ? (
                 <div className="peak-list">
-                  <span>Frequency peaks</span>
+                  <span>{t('Frequency peaks')}</span>
                   {peaks.length ? (
                     peaks.map((peak, index) => (
                       <span className="peak-chip" key={index}>
@@ -841,45 +874,46 @@ export default function App() {
                       </span>
                     ))
                   ) : (
-                    <span className="muted">Waiting for audio</span>
+                    <span className="muted">{t('Waiting for audio')}</span>
                   )}
                 </div>
               ) : view === 'spectrogram' ? (
                 <div className="color-legend">
-                  <span>Low</span>
+                  <span>{t('Low')}</span>
                   <i />
-                  <span>High</span>
-                  <small>−100 to −15 dB</small>
+                  <span>{t('High')}</span>
+                  <small>{t('−100 to −15 dB')}</small>
                 </div>
               ) : (
                 <span>
-                  Rising zero-crossing trigger <b>·</b>{' '}
+                  {t('Rising zero-crossing trigger')}
+                  <b>·</b>{' '}
                   {gain > 1
-                    ? `${gain}× visual zoom; hover values show the original amplitude`
-                    : 'Hover to see the original sample amplitude'}
+                    ? t('{0}× visual zoom; hover values show the original amplitude', gain)
+                    : t('Hover to see the original sample amplitude')}
                 </span>
               )}
               <span className="chart-note">
                 {frozen
-                  ? 'Display frozen · Capture continues'
+                  ? t('Display frozen · Capture continues')
                   : !running && displayedFrame
-                    ? 'Stopped · Showing the last frame'
+                    ? t('Stopped · Showing the last frame')
                     : view === 'spectrogram'
-                      ? 'Session time · Gaps indicate missing analysis'
+                      ? t('Session time · Gaps indicate missing analysis')
                       : view === 'spectrum' && frameSize
-                        ? `Bin spacing: ${frameSize.toFixed(2)} Hz`
-                        : 'Hover for details'}
+                        ? t('Bin spacing: {0} Hz', frameSize.toFixed(2))
+                        : t('Hover for details')}
               </span>
             </div>
           </div>
         </section>
 
-        <section className="panel timeline-controls" aria-label="Timeline navigation">
+        <section className="panel timeline-controls" aria-label={t('Timeline navigation')}>
           <div className="timeline-toolbar">
             <label>
-              Time range{' '}
+              {t('Time range')}{' '}
               <select
-                aria-label="Timeline range"
+                aria-label={t('Timeline range')}
                 value={windowSeconds}
                 onChange={(event) => {
                   const seconds = Number(event.target.value);
@@ -887,11 +921,11 @@ export default function App() {
                   setViewStart(range.start);
                 }}
               >
-                <option value={10}>10 sec</option>
-                <option value={30}>30 sec</option>
-                <option value={60}>1 min</option>
-                <option value={300}>5 min</option>
-                <option value={0}>Full session</option>
+                <option value={10}>{t('10 sec')}</option>
+                <option value={30}>{t('30 sec')}</option>
+                <option value={60}>{t('1 min')}</option>
+                <option value={300}>{t('5 min')}</option>
+                <option value={0}>{t('Full session')}</option>
               </select>
             </label>
             <button
@@ -900,36 +934,37 @@ export default function App() {
                 setFollowing(true);
               }}
             >
-              Go live
+              {t('Go live')}
             </button>
             <span className="muted small">
               {following && !frozen
-                ? 'Following live'
+                ? t('Following live')
                 : active
-                  ? 'Browsing history · Capture continues'
-                  : 'Browsing history'}{' '}
-              · Drag the waveform below or scroll horizontally to navigate
+                  ? t('Browsing history · Capture continues')
+                  : t('Browsing history')}{' '}
+              {t('· Drag the waveform below or scroll horizontally to navigate')}
             </span>
             <label>
-              Image range{' '}
+              {t('Image range')}{' '}
               <select
-                aria-label="Image range"
+                aria-label={t('Image range')}
                 value={imageScope}
                 disabled={view === 'spectrum'}
                 onChange={(event) => setImageScope(event.target.value)}
               >
-                <option value="visible">Visible range</option>
-                <option value="whole">Full session</option>
+                <option value="visible">{t('Visible range')}</option>
+                <option value="whole">{t('Full session')}</option>
               </select>
             </label>
             <button disabled={!data.duration} onClick={() => void exportImage()}>
-              Save PNG
+              {t('Save PNG')}
             </button>
           </div>
           <Navigator data={data} range={range} revision={snapshot.revision} onNavigate={navigate} />
           <p className="muted small">
-            After recording, click the pitch trace, spectrogram, or waveform overview to seek. Save
-            your session before refreshing the page.
+            {t(
+              'After recording, click the pitch trace, spectrogram, or waveform overview to seek. Save your session before refreshing the page.',
+            )}
           </p>
         </section>
         <Piano
@@ -941,45 +976,51 @@ export default function App() {
         />
         {playbackError && (
           <div className="error-banner" role="alert">
-            {playbackError}
+            {translateMessage(playbackError)}
           </div>
         )}
         <div className="bottom-row">
           <span>
             <ShieldCheck size={13} />
-            Processed on your device · Only Record keeps audio · No uploads
+            {t('Processed on your device · Only Record keeps audio · No uploads')}
           </span>
           <details className="capture-settings">
             <summary>
               <SlidersHorizontal size={13} />
-              Capture details
+              {t('Capture details')}
               <ChevronDown size={12} />
             </summary>
             <div className="settings-popover">
-              <strong>Settings reported by your browser</strong>
+              <strong>{t('Settings reported by your browser')}</strong>
               {snapshot.settings ? (
                 <>
                   <span>
-                    Echo cancellation <b>{settingLabel(snapshot.settings.echoCancellation)}</b>
+                    {t('Echo cancellation')}
+                    <b>{settingLabel(snapshot.settings.echoCancellation)}</b>
                   </span>
                   <span>
-                    Automatic gain control <b>{settingLabel(snapshot.settings.autoGainControl)}</b>
+                    {t('Automatic gain control')}
+                    <b>{settingLabel(snapshot.settings.autoGainControl)}</b>
                   </span>
                   <span>
-                    Noise suppression <b>{settingLabel(snapshot.settings.noiseSuppression)}</b>
+                    {t('Noise suppression')}
+                    <b>{settingLabel(snapshot.settings.noiseSuppression)}</b>
                   </span>
                   <span>
-                    Device sample rate <b>{snapshot.settings.sampleRate ?? 'Not reported'} Hz</b>
+                    {t('Device sample rate')}
+                    <b>{snapshot.settings.sampleRate ?? t('Not reported')} Hz</b>
                   </span>
                   <p>
-                    Audio processing was requested off. These are the settings reported by your
-                    browser; device processing may still apply.
+                    {t(
+                      'Audio processing was requested off. These are the settings reported by your browser; device processing may still apply.',
+                    )}
                   </p>
                 </>
               ) : (
                 <p>
-                  Start the microphone to see its settings. Echo cancellation, noise suppression,
-                  and automatic gain control are requested off.
+                  {t(
+                    'Start the microphone to see its settings. Echo cancellation, noise suppression, and automatic gain control are requested off.',
+                  )}
                 </p>
               )}
             </div>

@@ -1,3 +1,4 @@
+import { t, useLanguage } from '../i18n';
 import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { pitchHistoryScale } from '../audio/history-scale';
 import {
@@ -117,7 +118,7 @@ function timeGrid(ctx: CanvasRenderingContext2D, p: Plot) {
   for (let seconds = -10; seconds <= 0; seconds += 2) {
     const x = p.left + ((seconds + 10) / 10) * p.width;
     line(ctx, x, p.top, x, p.top + p.height);
-    ctx.fillText(seconds === 0 ? 'Now' : `${seconds}s`, x, p.top + p.height + 22);
+    ctx.fillText(seconds === 0 ? t('Now') : `${seconds}s`, x, p.top + p.height + 22);
   }
 }
 
@@ -130,6 +131,7 @@ export function PitchHistory({
   endTime: number;
   target: number | null;
 }) {
+  const language = useLanguage();
   const { ref, size } = useCanvas();
   useLayoutEffect(() => {
     const ctx = prepare(ref.current, size);
@@ -151,9 +153,9 @@ export function PitchHistory({
     }
     ctx.fillStyle = MUTED;
     ctx.textAlign = 'center';
-    for (const t of [-10, -5, 0]) {
-      const x = p.left + ((t + 10) / 10) * p.width;
-      ctx.fillText(t === 0 ? 'Now' : `${t}s`, x, p.top + p.height + 22);
+    for (const seconds of [-10, -5, 0]) {
+      const x = p.left + ((seconds + 10) / 10) * p.width;
+      ctx.fillText(seconds === 0 ? t('Now') : `${seconds}s`, x, p.top + p.height + 22);
     }
     ctx.save();
     ctx.beginPath();
@@ -182,13 +184,13 @@ export function PitchHistory({
     }
     ctx.stroke();
     ctx.restore();
-  }, [frames, endTime, target, size, ref]);
+  }, [frames, endTime, target, size, ref, language]);
   return (
     <canvas
       className="pitch-history"
       ref={ref}
       role="img"
-      aria-label="Pitch trace for the last ten seconds; gaps indicate no steady pitch"
+      aria-label={t('Pitch trace for the last ten seconds; gaps indicate no steady pitch')}
     />
   );
 }
@@ -259,6 +261,7 @@ export function AnalysisChart({
   frozen: boolean;
   running: boolean;
 }) {
+  const language = useLanguage();
   const { ref, size } = useCanvas();
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [tooltip, setTooltip] = useState('');
@@ -274,7 +277,7 @@ export function AnalysisChart({
     };
     ctx.fillStyle = MUTED;
     ctx.textAlign = 'left';
-    ctx.fillText(view === 'waveform' ? 'Amplitude' : view === 'spectrum' ? 'dB' : 'Hz', 8, 13);
+    ctx.fillText(view === 'waveform' ? t('Amplitude') : view === 'spectrum' ? 'dB' : 'Hz', 8, 13);
     if (view === 'spectrum') {
       frequencyGrid(ctx, p, false, max);
       dbGrid(ctx, p);
@@ -298,7 +301,7 @@ export function AnalysisChart({
             ctx.fillStyle = harmonic === 1 ? INK : '#829272';
             ctx.textAlign = 'center';
             if (harmonic <= 8)
-              ctx.fillText(harmonic === 1 ? 'Fundamental' : `${harmonic}×`, x, p.top + 12);
+              ctx.fillText(harmonic === 1 ? t('Fundamental') : `${harmonic}×`, x, p.top + 12);
           }
         }
         const gradient = ctx.createLinearGradient(0, p.top, 0, p.top + p.height);
@@ -418,7 +421,7 @@ export function AnalysisChart({
         const hz = frequencyAt(1 - (cursor.y - p.top) / p.height, max);
         const selected = frameAtTime(frames, time);
         const db = selected ? spectrumDbAt(selected, hz) : null;
-        text = `${(time - endTime).toFixed(2)} s · ${hz.toFixed(0)} Hz · ${db === null ? 'No sample' : Number.isFinite(db) ? `${db.toFixed(1)} dB` : '−∞ dB'}`;
+        text = `${(time - endTime).toFixed(2)} s · ${hz.toFixed(0)} Hz · ${db === null ? t('No sample') : Number.isFinite(db) ? `${db.toFixed(1)} dB` : '−∞ dB'}`;
       } else if (view === 'waveform' && frame) {
         const count = Math.min(
           frame.waveform.length,
@@ -427,11 +430,15 @@ export function AnalysisChart({
         const index =
           waveformStart(frame.waveform, count) +
           Math.min(count - 1, Math.round(ratioX * (count - 1)));
-        text = `${(ratioX * milliseconds).toFixed(2)} ms · Amplitude ${frame.waveform[index].toFixed(4)}`;
+        text = t(
+          '{0} ms · Amplitude {1}',
+          (ratioX * milliseconds).toFixed(2),
+          frame.waveform[index].toFixed(4),
+        );
       }
     }
     setTooltip((previous) => (previous === text ? previous : text));
-  }, [view, frame, frames, endTime, milliseconds, gain, cursor, max, ref, size]);
+  }, [view, frame, frames, endTime, milliseconds, gain, cursor, max, ref, size, language]);
 
   const move = (event: PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -447,20 +454,20 @@ export function AnalysisChart({
         role="img"
         aria-label={
           view === 'spectrum'
-            ? 'Live spectrum: frequency on the x-axis, relative level on the y-axis'
+            ? t('Live spectrum: frequency on the x-axis, relative level on the y-axis')
             : view === 'spectrogram'
-              ? 'Spectrogram for the last ten seconds; color shows frequency level'
-              : 'Live waveform: milliseconds on the x-axis, amplitude on the y-axis'
+              ? t('Spectrogram for the last ten seconds; color shows frequency level')
+              : t('Live waveform: milliseconds on the x-axis, amplitude on the y-axis')
         }
       />
       {!frame && (
         <div className="chart-empty">
           <span className="empty-cross">＋</span>
-          <p>{running ? 'Waiting for audio' : 'See your voice here'}</p>
+          <p>{running ? t('Waiting for audio') : t('See your voice here')}</p>
           <span>
             {running
-              ? 'Speak into the microphone or hold a note'
-              : 'Start your microphone to see your sound live'}
+              ? t('Speak into the microphone or hold a note')
+              : t('Start your microphone to see your sound live')}
           </span>
         </div>
       )}
@@ -469,7 +476,7 @@ export function AnalysisChart({
           {tooltip}
         </div>
       )}
-      {frozen && <span className="frozen-tag">Display frozen</span>}
+      {frozen && <span className="frozen-tag">{t('Display frozen')}</span>}
     </div>
   );
 }
