@@ -53,7 +53,7 @@ class RecordingSoakTest {
                 assertTrue(elapsed >= 1800000)
                 val meta = vm.state.value.meta!!
                 assertEquals(MAX_SAMPLES, meta.samples); assertTrue(meta.complete)
-                assertEquals("已达到 30 分钟", meta.reason)
+                assertEquals("The 30-minute limit has been reached", meta.reason)
                 fun digest(file: File): String {
                     val hash = MessageDigest.getInstance("SHA-256")
                     file.inputStream().use { input ->

@@ -228,7 +228,7 @@ class SessionHandle(val directory: File, initial: SessionMeta, private var writa
         envelopes.setLength(min(meta.envelopeBytes, envelopes.length()) / 16 * 16)
         meta = meta.copy(samples = samples)
     }
-    @Synchronized fun recover() { if (!meta.complete) { trimToCheckpoint(); finish("上次采集意外中断，已恢复落盘数据", true) } }
+    @Synchronized fun recover() { if (!meta.complete) { trimToCheckpoint(); finish("The previous capture was interrupted. Saved data has been recovered.", true) } }
     private fun writeSnapshot() {
         val f = latest ?: return
         val b = little((PITCH_SIZE + FFT_SIZE / 2) * 4)

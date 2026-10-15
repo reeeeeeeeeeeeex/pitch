@@ -41,7 +41,7 @@ class PianoEngine(private val context: Context) : Closeable {
                     if (mixer == null) startMixer()
                     lock.notifyAll()
                 }
-            } catch (e: Exception) { if (!closed && token == request.get()) onError("钢琴加载失败：${e.message}") }
+            } catch (e: Exception) { if (!closed && token == request.get()) onError("Unable to load piano samples: ${e.message}") }
         }
     }
     private fun decode(midi: Int): Sample {
@@ -85,7 +85,7 @@ class PianoEngine(private val context: Context) : Closeable {
                     codec.releaseOutputBuffer(index, false)
                 }
             }
-            check(used > 0 && outputDone) { "采样解码超时或为空" }
+            check(used > 0 && outputDone) { "Sample decoding timed out or returned no audio" }
             val pcm = values.copyOf(used)
             lastDecodedPeak = pcm.maxOf { abs(it) }
             return Sample(pcm, rate)
@@ -124,12 +124,12 @@ class PianoEngine(private val context: Context) : Closeable {
                     var offset = 0
                     while (offset < output.size && !closed) {
                         val count = audio.write(output, offset, output.size - offset, AudioTrack.WRITE_BLOCKING)
-                        if (count <= 0) error("钢琴输出不可用")
+                        if (count <= 0) error("Piano audio output is unavailable")
                         offset += count; samplesPlayed += count
                     }
                 }
             } catch (error: Exception) {
-                if (!closed) playbackError("钢琴播放失败：${error.message}")
+                if (!closed) playbackError("Unable to play piano audio: ${error.message}")
                 synchronized(lock) { voices.clear() }
             } finally {
                 runCatching { track?.stop() }; track?.release()

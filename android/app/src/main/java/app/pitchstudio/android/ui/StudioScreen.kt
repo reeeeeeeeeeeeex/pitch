@@ -3,6 +3,7 @@ package app.pitchstudio.android.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -67,15 +68,15 @@ val Coral = Color(0xffdc6963)
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 Canvas(Modifier.size(9.dp)) { drawCircle(if (s.active) { if (s.meta?.recorded == true) Coral else Accent } else Secondary) }
                 Spacer(Modifier.width(10.dp))
-                Text(if (s.active) { if (s.meta?.recorded == true) "录音中" else "分析中" } else if (s.meta != null) "已保留" else "准备就绪", color = Secondary, fontSize = 14.sp)
+                Text(if (s.active) { if (s.meta?.recorded == true) "Recording" else "Analyzing" } else if (s.meta != null) "Saved" else "Ready", color = Secondary, fontSize = 14.sp)
                 Spacer(Modifier.weight(1f))
                 Text(formatTime(s.meta?.duration ?: 0.0), fontFamily = FontFamily.Monospace, color = Secondary)
                 Box {
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "更多") }
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(text = { Text("本机会话") }, enabled = !s.active && !s.busy, onClick = { menu = false; sessions = true })
-                        DropdownMenuItem(text = { Text("导入会话") }, enabled = !s.active && !s.busy, onClick = { menu = false; importFile() })
-                        DropdownMenuItem(text = { Text("采集设置") }, enabled = !s.active, onClick = { menu = false; settings = true })
+                        DropdownMenuItem(text = { Text("Saved sessions") }, enabled = !s.active && !s.busy, onClick = { menu = false; sessions = true })
+                        DropdownMenuItem(text = { Text("Import session") }, enabled = !s.active && !s.busy, onClick = { menu = false; importFile() })
+                        DropdownMenuItem(text = { Text("Input settings") }, enabled = !s.active, onClick = { menu = false; settings = true })
                     }
                 }
             }
@@ -88,14 +89,14 @@ val Coral = Color(0xffdc6963)
                         verticalArrangement = Arrangement.Center, maxItemsInEachRow = if (density.fontScale > 1.3f) 1 else 2) {
                         Text(pitch?.let { noteName(it.note) } ?: "—", fontSize = 50.sp, fontWeight = FontWeight.Medium, modifier = Modifier.testTag("pitch-note"))
                         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                            Text(pitch?.let { "%.1f Hz".format(it.hz) } ?: "未检测到稳定音高", color = Secondary, fontSize = 14.sp)
-                            Text(cents?.let { "%+.0f 音分".format(it) } ?: "等待声音", color = Accent, fontSize = 14.sp)
+                            Text(pitch?.let { "%.1f Hz".format(it.hz) } ?: "No steady pitch detected", color = Secondary, fontSize = 14.sp)
+                            Text(cents?.let { "%+.0f cents".format(it) } ?: "Waiting for audio", color = Accent, fontSize = 14.sp)
                         }
                     }
                     TuningScale(cents, s.frame?.rmsDb ?: -160f)
-                    Row(Modifier.fillMaxWidth()) {
-                        listOf(View.PITCH to "音高", View.SPECTROGRAM to "声谱", View.WAVEFORM to "波形", View.SPECTRUM to "频谱").forEach { (view, title) ->
-                            Column(Modifier.weight(1f).clickable { vm.view(view) }.heightIn(min = 48.dp).padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                        listOf(View.PITCH to "Pitch", View.SPECTROGRAM to "Spectrogram", View.WAVEFORM to "Waveform", View.SPECTRUM to "Spectrum").forEach { (view, title) ->
+                            Column(Modifier.widthIn(min = 80.dp).clickable { vm.view(view) }.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                                 Text(title, color = if (s.view == view) Accent else Secondary, fontSize = 15.sp)
                                 Spacer(Modifier.height(12.dp))
                                 Box(Modifier.height(2.dp).width(32.dp).background(if (s.view == view) Accent else Color.Transparent))
@@ -107,7 +108,7 @@ val Coral = Color(0xffdc6963)
                         val current by rememberUpdatedState(s)
                         val chartModifier = Modifier.weight(1f).fillMaxHeight()
                             .testTag("chart-${s.view.name.lowercase()}")
-                            .semantics { contentDescription = if (s.view == View.PITCH) "音高图，${noteName(s.display.pitchLow)} 至 ${noteName(s.display.pitchLow + 24)}，25 条半音线" else "${s.view.name}分析图" }
+                            .semantics { contentDescription = if (s.view == View.PITCH) "Pitch chart, ${noteName(s.display.pitchLow)} to ${noteName(s.display.pitchLow + 24)}, 25 semitone lines" else "${s.view.name.lowercase().replaceFirstChar { it.uppercase() }} chart" }
                             .pointerInput(s.view) {
                                 detectTapGestures(onTap = { p ->
                                     val label = with(density) { 10.sp.toPx() }
@@ -135,21 +136,21 @@ val Coral = Color(0xffdc6963)
                     }
                     s.probe?.let { Text(it, color = Secondary, fontSize = 11.sp, modifier = Modifier.padding(start = 12.dp, top = 4.dp)) }
                     if (s.view == View.WAVEFORM) {
-                        TextButton(onClick = { detail = !detail }) { Text(if (detail) "收起振动细节" else "振动细节 · 毫秒") }
+                        TextButton(onClick = { detail = !detail }) { Text(if (detail) "Hide waveform detail" else "Waveform detail · ms") }
                         if (detail) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Choice(listOf(5, 10, 20, 50), s.display.milliseconds, { "$it ms" }) { vm.details(ms = it) }
                                 Choice(listOf(1, 2, 4, 8), s.display.gain, { "×$it" }) { vm.details(gain = it) }
-                                Text("实时／最后快照", fontSize = 11.sp, color = Secondary)
+                                Text("Live / last snapshot", fontSize = 11.sp, color = Secondary)
                             }
                             Canvas(Modifier.fillMaxWidth().height(130.dp)) { drawIntoCanvas { ChartRenderer.detail(it.nativeCanvas, size.width, size.height, s, with(density) { 11.sp.toPx() }) } }
                         }
                     }
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Choice(listOf(10, 30, 60, 300, 0), s.display.windowSeconds, { when (it) { 0 -> "整段"; 60 -> "1 分钟"; 300 -> "5 分钟"; else -> "$it 秒" } }, vm::window)
+                        Choice(listOf(10, 30, 60, 300, 0), s.display.windowSeconds, { when (it) { 0 -> "All"; 60 -> "1 min"; 300 -> "5 min"; else -> "$it sec" } }, vm::window)
                         Spacer(Modifier.weight(1f))
-                        if (!s.following) TextButton(onClick = vm::live) { Text("回到实时", fontSize = 12.sp) }
-                        IconButton(onClick = vm::freeze, enabled = s.meta != null) { Icon(if (s.frozen) Icons.Default.PlayArrow else Icons.Default.AcUnit, if (s.frozen) "恢复画面" else "冻结画面", tint = if (s.frozen) Accent else Secondary) }
+                        if (!s.following) TextButton(onClick = vm::live) { Text("Go live", fontSize = 12.sp) }
+                        IconButton(onClick = vm::freeze, enabled = s.meta != null) { Icon(if (s.frozen) Icons.Default.PlayArrow else Icons.Default.AcUnit, if (s.frozen) "Resume display" else "Freeze display", tint = if (s.frozen) Accent else Secondary) }
                     }
                     Overview(s, vm)
                     piano?.invoke()
@@ -157,46 +158,46 @@ val Coral = Color(0xffdc6963)
                 }
             }
             if (s.message.isNotBlank()) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(s.message, modifier = Modifier.weight(1f), fontSize = 12.sp, color = if (s.message.contains("失败") || s.message.contains("不足")) Coral else Secondary)
-                IconButton(onClick = vm::clearMessage) { Icon(Icons.Default.Close, "关闭提示", modifier = Modifier.size(18.dp)) }
+                Text(s.message, modifier = Modifier.weight(1f), fontSize = 12.sp, color = if (s.message.contains("failed", ignoreCase = true) || s.message.contains("insufficient", ignoreCase = true) || s.message.contains("unable", ignoreCase = true)) Coral else Secondary)
+                IconButton(onClick = vm::clearMessage) { Icon(Icons.Default.Close, "Dismiss message", modifier = Modifier.size(18.dp)) }
             }
             if (!s.active && s.meta?.recorded == true) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = vm::play, enabled = !s.busy) { Icon(if (s.playing) Icons.Default.Pause else Icons.Default.PlayArrow, if (s.playing) "暂停回放" else "播放录音") }
-                Slider(value = (s.cursor ?: 0.0).toFloat().coerceIn(0f, max(.001f, s.meta!!.duration.toFloat())), onValueChange = { vm.seek(it.toDouble()) }, valueRange = 0f..max(.001f, s.meta!!.duration.toFloat()), modifier = Modifier.weight(1f).semantics { contentDescription = "回放位置" })
+                IconButton(onClick = vm::play, enabled = !s.busy) { Icon(if (s.playing) Icons.Default.Pause else Icons.Default.PlayArrow, if (s.playing) "Pause playback" else "Play recording") }
+                Slider(value = (s.cursor ?: 0.0).toFloat().coerceIn(0f, max(.001f, s.meta!!.duration.toFloat())), onValueChange = { vm.seek(it.toDouble()) }, valueRange = 0f..max(.001f, s.meta!!.duration.toFloat()), modifier = Modifier.weight(1f).semantics { contentDescription = "Playback position" })
                 Text(formatTime(s.cursor ?: 0.0), fontSize = 12.sp, fontFamily = FontFamily.Monospace)
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (s.active) Button(onClick = vm::stop, enabled = !s.stopping, colors = ButtonDefaults.buttonColors(containerColor = if (s.meta?.recorded == true) Coral else Accent, contentColor = if (s.meta?.recorded == true) Color.White else Back), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) {
-                    Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(10.dp)); Text(if (s.stopping) "正在保存…" else if (s.meta?.recorded == true) "结束录音" else "结束分析")
+                    Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(10.dp)); Text(if (s.stopping) "Saving…" else if (s.meta?.recorded == true) "Stop recording" else "Stop analysis")
                 } else {
-                    OutlinedButton(onClick = { start(false) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("仅分析") }
-                    Button(onClick = { start(true) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("开始录音") }
-                    if (s.meta != null) IconButton(onClick = { exports = true }, enabled = !s.busy, modifier = Modifier.height(52.dp)) { Icon(Icons.Default.IosShare, "导出") }
+                    OutlinedButton(onClick = { start(false) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("Analyze only") }
+                    Button(onClick = { start(true) }, enabled = !s.busy, modifier = Modifier.weight(1f).heightIn(min = 52.dp), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) { Text("Start recording") }
+                    if (s.meta != null) IconButton(onClick = { exports = true }, enabled = !s.busy, modifier = Modifier.height(52.dp)) { Icon(Icons.Default.IosShare, "Export") }
                 }
             }
         }
     }
     if (exports) ModalBottomSheet(onDismissRequest = { exports = false }) {
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text("导出", fontSize = 20.sp); Spacer(Modifier.height(12.dp))
-            TextButton(onClick = { exports = false; export("wav", false) }, enabled = s.meta?.recorded == true) { Text("保存 WAV 录音") }
+            Text("Export", fontSize = 20.sp); Spacer(Modifier.height(12.dp))
+            TextButton(onClick = { exports = false; export("wav", false) }, enabled = s.meta?.recorded == true) { Text("Save WAV recording") }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(whole, onCheckedChange = { whole = it }); Text("图像使用整段概览", fontSize = 14.sp)
+                Checkbox(whole, onCheckedChange = { whole = it }); Text("Include the full session in the image", fontSize = 14.sp)
             }
-            TextButton(onClick = { exports = false; export("png", whole) }) { Text("保存 PNG 图像") }
-            TextButton(onClick = { exports = false; export("session", false) }) { Text("保存完整会话 .pitchsession") }
+            TextButton(onClick = { exports = false; export("png", whole) }) { Text("Save PNG image") }
+            TextButton(onClick = { exports = false; export("session", false) }) { Text("Save session .pitchsession") }
         }
     }
     if (sessions) SessionSheet(s, vm) { sessions = false }
     if (settings) ModalBottomSheet(onDismissRequest = { settings = false }) {
         Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
-            Text("采集设置", fontSize = 20.sp)
-            TextButton(onClick = { vm.selectDevice(null) }) { Text(if (s.deviceId == null) "✓ 系统默认麦克风" else "系统默认麦克风") }
+            Text("Input settings", fontSize = 20.sp)
+            TextButton(onClick = { vm.selectDevice(null) }) { Text(if (s.deviceId == null) "✓ System default microphone" else "System default microphone") }
             remember { vm.devices() }.forEach { (id, label) -> TextButton(onClick = { vm.selectDevice(id) }) { Text((if (s.deviceId == id) "✓ " else "") + label) } }
-            s.meta?.settings?.let { Text("${it.source} · ${it.sampleRate} Hz\n回声消除：${it.echoCancellation ?: "未知"}\n降噪：${it.noiseSuppression ?: "未知"}\n自动增益：${it.autoGainControl ?: "未知"}", fontSize = 13.sp, color = Secondary) }
-            Spacer(Modifier.height(16.dp)); Text("声音在本机处理。锁屏或切到其他 App 会结束采集并保留结果。每次最长 30 分钟。", color = Secondary, fontSize = 13.sp)
-            Spacer(Modifier.height(12.dp)); Text("回放会自动提升偏小的录音音量，最高约 24 dB。保存的录音、导出的 WAV 和分析图保留原始电平。", color = Secondary, fontSize = 13.sp)
-            Spacer(Modifier.height(12.dp)); Text("钢琴：Salamander Grand Piano / Alexander Holm / CC BY 3.0\n音高算法：Pitchy / Ian Johnson / MIT", fontSize = 12.sp, color = Secondary)
+            s.meta?.settings?.let { Text("${it.source} · ${it.sampleRate} Hz\nEcho cancellation: ${it.echoCancellation ?: "Unknown"}\nNoise suppression: ${it.noiseSuppression ?: "Unknown"}\nAutomatic gain control: ${it.autoGainControl ?: "Unknown"}", fontSize = 13.sp, color = Secondary) }
+            Spacer(Modifier.height(16.dp)); Text("Audio is processed on your device. Locking the screen or switching apps ends capture and saves your results. Sessions can last up to 30 minutes.", color = Secondary, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp)); Text("Quiet recordings are boosted during playback by up to about 24 dB. Saved recordings, exported WAV files, and analysis keep their original levels.", color = Secondary, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp)); Text("Piano: Salamander Grand Piano / Alexander Holm / CC BY 3.0\nPitch detection: Pitchy / Ian Johnson / MIT", fontSize = 12.sp, color = Secondary)
         }
     }
 }
@@ -219,7 +220,7 @@ val Coral = Color(0xffdc6963)
     }
 }
 @Composable private fun PitchScroll(s: StudioState, vm: StudioViewModel) {
-    Canvas(Modifier.width(48.dp).fillMaxHeight().semantics { contentDescription = "音高显示音域" }
+    Canvas(Modifier.width(48.dp).fillMaxHeight().semantics { contentDescription = "Pitch display range" }
         .pointerInput(Unit) { detectDragGestures(onDragStart = { vm.pitchDrag(true) }, onDragEnd = { vm.pitchDrag(false) }, onDragCancel = { vm.pitchDrag(false) }) { change, _ ->
             change.consume(); vm.setPitchLow((84 - change.position.y / size.height * 63).roundToInt())
         } }) {
@@ -230,7 +231,7 @@ val Coral = Color(0xffdc6963)
 }
 @Composable private fun Overview(s: StudioState, vm: StudioViewModel) {
     val latest by rememberUpdatedState(s)
-    Canvas(Modifier.fillMaxWidth().height(48.dp).background(Color(0xff192019), RoundedCornerShape(10.dp)).semantics { contentDescription = "整段波形导航" }
+    Canvas(Modifier.fillMaxWidth().height(48.dp).background(Color(0xff192019), RoundedCornerShape(10.dp)).semantics { contentDescription = "Full-session waveform navigator" }
         .pointerInput(Unit) { detectTapGestures { p -> vm.navigate(p.x / size.width * (latest.frozenAt ?: latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }
         .pointerInput(Unit) { detectDragGestures { change, _ -> change.consume(); vm.navigate(change.position.x / size.width * (latest.frozenAt ?: latest.meta?.duration ?: 0.0) - latest.range.span / 2) } }) {
         val duration = max(1.0, s.frozenAt ?: s.meta?.duration ?: 0.0)
@@ -246,21 +247,21 @@ val Coral = Color(0xffdc6963)
     var name by remember { mutableStateOf("") }
     ModalBottomSheet(onDismissRequest = dismiss) {
         Column(Modifier.padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
-            Text("本机会话", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
-            if (s.sessions.isEmpty()) Text("还没有保存的会话", color = Secondary)
+            Text("Saved sessions", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
+            if (s.sessions.isEmpty()) Text("No saved sessions yet", color = Secondary)
             s.sessions.forEach { session ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f).clickable { vm.load(session.id); dismiss() }.padding(vertical = 14.dp)) {
                         Text(session.name, maxLines = 2, fontSize = 14.sp)
-                        Text("${formatTime(session.duration)} · ${if (session.recorded) "录音" else "仅分析"}${if (session.interrupted) " · 已中断" else ""}", color = Secondary, fontSize = 12.sp)
+                        Text("${formatTime(session.duration)} · ${if (session.recorded) "Recording" else "Analyze only"}${if (session.interrupted) " · Interrupted" else ""}", color = Secondary, fontSize = 12.sp)
                     }
-                    IconButton(onClick = { editing = session; name = session.name }) { Icon(Icons.Default.Edit, "重命名") }
-                    IconButton(onClick = { deleting = session }) { Icon(Icons.Default.DeleteOutline, "删除会话") }
+                    IconButton(onClick = { editing = session; name = session.name }) { Icon(Icons.Default.Edit, "Rename") }
+                    IconButton(onClick = { deleting = session }) { Icon(Icons.Default.DeleteOutline, "Delete session") }
                 }
             }
             Spacer(Modifier.height(24.dp))
         }
     }
-    editing?.let { item -> AlertDialog(onDismissRequest = { editing = null }, title = { Text("重命名") }, text = { OutlinedTextField(name, onValueChange = { name = it.take(200) }) }, confirmButton = { TextButton(onClick = { vm.rename(item.id, name.trim()); editing = null }, enabled = name.isNotBlank()) { Text("保存") } }, dismissButton = { TextButton(onClick = { editing = null }) { Text("取消") } }) }
-    deleting?.let { item -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text("删除此会话？") }, text = { Text("${item.name}\n应用内录音和分析将一并删除。已导出的文件不受影响。") }, confirmButton = { TextButton(onClick = { vm.delete(item.id); deleting = null }) { Text("删除", color = Coral) } }, dismissButton = { TextButton(onClick = { deleting = null }) { Text("取消") } }) }
+    editing?.let { item -> AlertDialog(onDismissRequest = { editing = null }, title = { Text("Rename") }, text = { OutlinedTextField(name, onValueChange = { name = it.take(200) }) }, confirmButton = { TextButton(onClick = { vm.rename(item.id, name.trim()); editing = null }, enabled = name.isNotBlank()) { Text("Save") } }, dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } }) }
+    deleting?.let { item -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Delete this session?") }, text = { Text("${item.name}\nThis removes the recording and analysis from the app. Exported files are kept.") }, confirmButton = { TextButton(onClick = { vm.delete(item.id); deleting = null }) { Text("Delete", color = Coral) } }, dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } }) }
 }

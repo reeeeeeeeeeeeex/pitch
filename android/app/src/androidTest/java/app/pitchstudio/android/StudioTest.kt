@@ -22,11 +22,11 @@ class StudioTest {
     private fun until(condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 15000
         while (!condition() && System.currentTimeMillis() < deadline) Thread.sleep(25)
-        assertTrue("等待状态超时：${vm.state.value.message}", condition())
+        assertTrue("Timed out waiting for state: ${vm.state.value.message}", condition())
     }
 
     @Test fun livePitchFreezeNavigationPlaybackAndPng() {
-        compose.onNodeWithText("声见", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithText("Pitch Studio", useUnmergedTree = true).assertDoesNotExist()
         until { !vm.state.value.busy }
         val source = SyntheticSource()
         compose.runOnUiThread { vm.engine.start(true, testSource = source) }

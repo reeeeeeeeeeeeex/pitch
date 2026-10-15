@@ -32,11 +32,11 @@ class DocumentPickerTest {
             assertEquals(original, vm.state.value.meta!!.id)
             assertFalse(vm.state.value.busy); assertFalse(vm.state.value.active)
         }
-        compose.onNodeWithContentDescription("导出").performClick()
-        compose.onNodeWithText("保存 WAV 录音").performClick()
+        compose.onNodeWithContentDescription("Export").performClick()
+        compose.onNodeWithText("Save WAV recording").performClick()
         cancelPicker()
-        compose.onNodeWithContentDescription("更多").performClick()
-        compose.onNodeWithText("导入会话").performClick()
+        compose.onNodeWithContentDescription("More").performClick()
+        compose.onNodeWithText("Import session").performClick()
         cancelPicker()
     }
 }

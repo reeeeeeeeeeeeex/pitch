@@ -20,22 +20,22 @@ class AndroidPcmSource(context: Context, deviceId: Int? = null) : PcmSource {
     @Volatile private var stopping = false
     private var routedId: Int? = null
     init {
-        if (minimum <= 0 || record.state != AudioRecord.STATE_INITIALIZED || record.sampleRate != SAMPLE_RATE || record.channelCount != 1 || record.audioFormat != AudioFormat.ENCODING_PCM_16BIT) { record.release(); error("设备无法提供 48 kHz 单声道 PCM 输入") }
+        if (minimum <= 0 || record.state != AudioRecord.STATE_INITIALIZED || record.sampleRate != SAMPLE_RATE || record.channelCount != 1 || record.audioFormat != AudioFormat.ENCODING_PCM_16BIT) { record.release(); error("This device cannot provide 48 kHz mono PCM input") }
         val device = manager.getDevices(AudioManager.GET_DEVICES_INPUTS).firstOrNull { it.id == deviceId }
-        if (deviceId != null && device == null) { record.release(); error("所选麦克风已断开，请重新选择") }
-        if (device != null && !record.setPreferredDevice(device)) { record.release(); error("无法选择此麦克风") }
-        settings = InputSettings(source = if (source == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "VOICE_RECOGNITION", device = device?.productName?.toString() ?: "系统默认麦克风",
+        if (deviceId != null && device == null) { record.release(); error("The selected microphone disconnected. Choose another input.") }
+        if (device != null && !record.setPreferredDevice(device)) { record.release(); error("Unable to select this microphone") }
+        settings = InputSettings(source = if (source == MediaRecorder.AudioSource.UNPROCESSED) "UNPROCESSED" else "VOICE_RECOGNITION", device = device?.productName?.toString() ?: "System default microphone",
             echoCancellation = if (AcousticEchoCanceler.isAvailable()) disable(AcousticEchoCanceler.create(record.audioSessionId)) else null,
             noiseSuppression = if (NoiseSuppressor.isAvailable()) disable(NoiseSuppressor.create(record.audioSessionId)) else null,
             autoGainControl = if (AutomaticGainControl.isAvailable()) disable(AutomaticGainControl.create(record.audioSessionId)) else null)
     }
-    override fun start() { record.startRecording(); check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "麦克风未能开始采集" } }
+    override fun start() { record.startRecording(); check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "The microphone could not start capture" } }
     override fun read(buffer: ShortArray): Int {
         val count = record.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
         if (!stopping) {
-            if (record.activeRecordingConfiguration?.isClientSilenced == true) error("麦克风被系统或其他应用占用")
+            if (record.activeRecordingConfiguration?.isClientSilenced == true) error("The microphone is in use by the system or another app")
             val route = record.routedDevice?.id
-            if (routedId != null && route != null && route != routedId) error("输入设备已改变，请重新开始采集")
+            if (routedId != null && route != null && route != routedId) error("The input device changed. Please start capture again.")
             if (route != null) routedId = route
         }
         return count

@@ -157,14 +157,14 @@ object ChartRenderer {
             val canvas = Canvas(bitmap); canvas.drawColor(background)
             val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(230, 235, 223); textSize = 24f }
             canvas.drawText("${session.meta.name.take(60)} · ${formatTime(range.start)} — ${formatTime(range.end)}", 54f, 38f, p)
-            p.color = muted; p.textSize = 18f; canvas.drawText("48 kHz · ${noteName(state.display.pitchLow)} — ${noteName(state.display.pitchLow + 24)} · 音高 / ${analysis.name.lowercase()}", 54f, 72f, p)
+            p.color = muted; p.textSize = 18f; canvas.drawText("48 kHz · ${noteName(state.display.pitchLow)} — ${noteName(state.display.pitchLow + 24)} · Pitch / ${analysis.name.lowercase()}", 54f, 72f, p)
             canvas.save(); canvas.translate(0f, 90f); draw(canvas, 1600f, 560f, View.PITCH, snapshot, 18f); canvas.restore()
             canvas.save(); canvas.translate(0f, 700f); draw(canvas, 1600f, 460f, analysis, snapshot, 18f); canvas.restore()
             if (analysis == View.SPECTROGRAM) colorScale(canvas, 60f, 1170f, 500f, 18f)
             val units = when (analysis) {
-                View.SPECTRUM -> "瞬时频谱 · 横轴 Hz · 纵轴 dB"
-                View.SPECTROGRAM -> "横轴 mm:ss · 纵轴 Hz · 空缺表示没有分析数据"
-                else -> "横轴 mm:ss · 纵轴振幅（−1 至 1）"
+                View.SPECTRUM -> "Spectrum snapshot · X: Hz · Y: dB"
+                View.SPECTROGRAM -> "X: mm:ss · Y: Hz · Gaps indicate missing analysis"
+                else -> "X: mm:ss · Y: amplitude (−1 to 1)"
             }
             canvas.drawText(units, 690f, 1205f, p)
             context.contentResolver.openOutputStream(uri, "wt")!!.use { require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)); it.flush() }

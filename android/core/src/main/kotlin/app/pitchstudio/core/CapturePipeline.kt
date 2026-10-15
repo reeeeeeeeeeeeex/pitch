@@ -46,7 +46,7 @@ class CapturePipeline(
                 val window = pending.getAndSet(null)
                 if (window == null) { Thread.sleep(5); continue }
                 try { val frame = processor.analyze(window.first, window.second); sink.appendFrame(frame); onFrame(frame) }
-                catch (error: Exception) { stop("分析失败：${error.message}") }
+                catch (error: Exception) { stop("Analysis failed: ${error.message}") }
             }
         }, "pitch-analysis")
         writerThread = Thread({
@@ -64,17 +64,17 @@ class CapturePipeline(
                     if (sink.samples >= PITCH_SIZE && sink.samples - lastFrame >= 1600) submit()
                     if (sink.samples - lastCheckpoint >= SAMPLE_RATE) {
                         sink.checkpoint(); lastCheckpoint = sink.samples
-                        if (!sink.hasSpace()) throw java.io.IOException("剩余空间不足")
+                        if (!sink.hasSpace()) throw java.io.IOException("Insufficient storage space")
                     }
                 }
                 if (sink.samples > lastFrame && sink.samples >= PITCH_SIZE) submit()
-            } catch (error: Exception) { stop("保存中断：${error.message}"); queue.clear() }
+            } catch (error: Exception) { stop("Saving interrupted: ${error.message}"); queue.clear() }
             finally {
                 written.set(true)
                 analysisThread.join()
                 val message = reason.get()
-                try { sink.finish(message, message.isNotEmpty() && message != "已达到 30 分钟") }
-                catch (error: Exception) { reason.set("保存未完成：${error.message}；重启后恢复最近落盘数据") }
+                try { sink.finish(message, message.isNotEmpty() && message != "The 30-minute limit has been reached") }
+                catch (error: Exception) { reason.set("Saving failed: ${error.message}. Restart the app to recover the last checkpoint.") }
                 onFinished(reason.get())
             }
         }, "pitch-file-writer")
@@ -83,14 +83,14 @@ class CapturePipeline(
             try {
                 while (running.get() && accepted < MAX_SAMPLES) {
                     val read = source.read(buffer)
-                    if (read < 0) { if (running.get()) throw java.io.IOException("麦克风读取失败 ($read)") else break }
+                    if (read < 0) { if (running.get()) throw java.io.IOException("Microphone read failed ($read)") else break }
                     if (read == 0) { Thread.sleep(2); continue }
                     val count = minOf(read.toLong(), MAX_SAMPLES - accepted).toInt()
-                    if (!queue.offer(buffer.copyOf(count))) throw java.io.IOException("存储速度不足，已保留写入部分")
+                    if (!queue.offer(buffer.copyOf(count))) throw java.io.IOException("Storage is too slow. Audio written so far has been retained.")
                     accepted += count
                 }
-                if (accepted == MAX_SAMPLES) reason.compareAndSet("", "已达到 30 分钟")
-            } catch (error: Exception) { if (running.get()) reason.compareAndSet("", "采集结束：${error.message}") }
+                if (accepted == MAX_SAMPLES) reason.compareAndSet("", "The 30-minute limit has been reached")
+            } catch (error: Exception) { if (running.get()) reason.compareAndSet("", "Capture ended: ${error.message}") }
             finally { running.set(false); runCatching { source.stop() }; runCatching { source.close() }; captured.set(true) }
         }, "pitch-capture")
         analysisThread.start(); writerThread.start(); captureThread.start()

@@ -45,7 +45,7 @@ class LayoutTest {
             recording.appendPcm(block)
             if (frame >= 4) recording.appendFrame(processor.analyze(FloatArray(FFT_SIZE) { ring[(ringCursor + it) % FFT_SIZE] }, (frame + 1) * .04))
         }
-        recording.updateMeta(recording.meta.copy(name = "练习片段 · 合成音测试"))
+        recording.updateMeta(recording.meta.copy(name = "Practice session · Synthetic audio"))
         recording.updateDisplay(DisplaySettings(pitchLow = 48, pitchFollowing = false))
         recording.finish(); val id = recording.meta.id; recording.close()
         compose.runOnUiThread { vm.load(id) }
@@ -60,9 +60,9 @@ class LayoutTest {
         assertEquals(48, vm.state.value.display.pitchLow)
         compose.runOnUiThread { vm.pause(); vm.seek(5.0); vm.window(30); vm.navigate(0.0); vm.view(View.PITCH); vm.clearMessage() }
         until { vm.state.value.range.span == 30.0 && !vm.state.value.playing }
-        compose.onNodeWithContentDescription("音高图，C3 至 C5，25 条半音线").assertExists()
-        compose.onNodeWithText("开始录音").assertIsDisplayed()
-        compose.onNodeWithText("仅分析").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Pitch chart, C3 to C5, 25 semitone lines").assertExists()
+        compose.onNodeWithText("Start recording").assertIsDisplayed()
+        compose.onNodeWithText("Analyze only").assertIsDisplayed()
         val configuration = compose.activity.resources.configuration
         val name = "${configuration.screenWidthDp}x${configuration.screenHeightDp}-font${configuration.fontScale}"
         val folder = File(compose.activity.getExternalFilesDir(null), "layout-$name").also { it.mkdirs() }
@@ -81,7 +81,7 @@ class LayoutTest {
         val afterScroll = compose.onNodeWithTag("chart-pitch").fetchSemanticsNode().positionInRoot.y
         assertTrue("Vertical chart gestures must let the page scroll", afterScroll < beforeScroll)
         shot("pitch-scrolled")
-        compose.onNodeWithText("音高").performScrollTo()
+        compose.onNodeWithText("Pitch").performScrollTo()
         for (view in listOf(View.SPECTROGRAM, View.WAVEFORM, View.SPECTRUM)) {
             compose.runOnUiThread { vm.view(view) }
             Thread.sleep(150)
@@ -91,8 +91,8 @@ class LayoutTest {
             until { png.length() > 1000 && !vm.state.value.busy }
         }
         compose.runOnUiThread { vm.view(View.PITCH); vm.clearMessage() }
-        compose.onNodeWithText("参考钢琴").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("试听 C4").assertExists()
+        compose.onNodeWithText("Reference piano").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Play C4").assertExists()
         shot("piano")
     }
 }

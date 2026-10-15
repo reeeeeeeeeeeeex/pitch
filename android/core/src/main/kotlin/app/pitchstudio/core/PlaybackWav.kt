@@ -18,12 +18,12 @@ class PlaybackWav(file: File, val gain: Float) : Closeable {
     private var closed = false
     init {
         if (!gain.isFinite() || gain !in 1f..16f || size < 44 || (size - 44) % 2 != 0L) {
-            input.close(); throw IOException("无效的回放数据")
+            input.close(); throw IOException("Invalid playback data")
         }
     }
 
     @Synchronized fun readAt(position: Long, buffer: ByteArray, offset: Int, count: Int): Int {
-        if (closed) throw IOException("回放已关闭")
+        if (closed) throw IOException("Playback is closed")
         require(position >= 0 && offset >= 0 && count >= 0 && offset <= buffer.size - count)
         if (count == 0) return 0
         if (position >= size) return -1

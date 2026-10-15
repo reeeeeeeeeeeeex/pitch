@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
     private var pendingRecord = false
     private var wholeImage = false
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { allowed ->
-        if (allowed) studio.start(pendingRecord) else studio.message("麦克风权限未授予，可在系统设置中开启后重试")
+        if (allowed) studio.start(pendingRecord) else studio.message("Microphone permission was denied. Allow access in system settings, then try again.")
     }
     private val open = registerForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(studio::import) }
     private val wav = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) { it?.let { uri -> studio.export(uri, "wav") } }

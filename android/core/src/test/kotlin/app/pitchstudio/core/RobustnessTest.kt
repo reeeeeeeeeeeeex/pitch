@@ -97,7 +97,7 @@ class RobustnessTest {
         assertTrue(closed); assertTrue(real.meta.complete); assertTrue(real.meta.interrupted)
         assertEquals(48000L, real.samples)
         assertEquals(96044L, real.wavFile.length())
-        assertTrue(reason.contains("剩余空间不足"))
+        assertTrue(reason.contains("Insufficient storage space"))
         real.close()
     }
 }

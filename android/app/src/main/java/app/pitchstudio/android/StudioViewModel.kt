@@ -62,7 +62,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repository.list().firstOrNull()?.let { load(it.id) }
             while (isActive) {
-                runCatching { refresh() }.onFailure { error -> if (error !is CancellationException) message("图表读取失败：${error.message}") }
+                runCatching { refresh() }.onFailure { error -> if (error !is CancellationException) message("Unable to load chart data: ${error.message}") }
                 delay(40)
             }
         }
@@ -83,15 +83,15 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             try { withContext(Dispatchers.IO) {
                 if (!foreground) return@withContext
                 engine.start(recorded, state.value.deviceId)
-                if (!foreground) engine.stop("已离开前台，采集已结束")
+                if (!foreground) engine.stop("Capture stopped because the app left the foreground.")
             } }
-            catch (e: Exception) { message(e.message ?: "无法开始采集") }
+            catch (e: Exception) { message(e.message ?: "Unable to start capture") }
             finally { mutable.update { it.copy(busy = false) } }
         }
     }
     fun stop() = engine.stop()
     fun foreground() { foreground = true }
-    fun background() { foreground = false; if (state.value.active) engine.stop("已离开前台，录音和分析已保留"); pause(); piano.stopAll() }
+    fun background() { foreground = false; if (state.value.active) engine.stop("The app left the foreground. Your recording and analysis have been saved."); pause(); piano.stopAll() }
     fun playPiano(note: Int) { target(note); piano.play(note, ::message) }
     fun freeze() {
         if (state.value.frozen) { cutoff = null; frozenFrame = null }
@@ -117,7 +117,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         if (!state.value.active) displaySave = viewModelScope.launch {
             delay(300)
             try { withContext(Dispatchers.IO) { current?.checkpoint() } }
-            catch (e: Exception) { if (e !is CancellationException) message("显示设置保存失败：${e.message}") }
+            catch (e: Exception) { if (e !is CancellationException) message("Unable to save display settings: ${e.message}") }
         }
     }
     private suspend fun refresh() {
@@ -161,7 +161,7 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
                 mutable.value = state.value.copy(meta = loaded.meta, frame = loaded.latest, display = loaded.meta.display,
                     view = View.entries.firstOrNull { it.name.lowercase() == loaded.meta.display.mobileView } ?: View.PITCH,
                     cursor = null, following = false, frozen = false, frozenAt = null, busy = false, playing = false, probe = null)
-            } catch (e: Exception) { message("打开失败：${e.message}") }
+            } catch (e: Exception) { message("Unable to open session: ${e.message}") }
             finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -170,11 +170,11 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         try {
             if (player == null) player = RecordingPlayer(current!!,
                 completed = { mutable.update { s -> s.copy(playing = false) } },
-                failed = { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "播放失败，请重试") } }).apply {
+                failed = { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "Playback failed. Please try again.") } }).apply {
                 state.value.cursor?.let { seekTo((it * 1000).toInt()) }
             }
             if (player!!.isPlaying) pause() else { player!!.start(); mutable.update { it.copy(playing = true) } }
-        } catch (e: Exception) { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "播放失败：${e.message}") } }
+        } catch (e: Exception) { player?.release(); player = null; mutable.update { it.copy(playing = false, message = "Playback failed: ${e.message}") } }
     }
     fun pause() { player?.let { runCatching { if (it.isPlaying) it.pause() } }; mutable.update { it.copy(playing = false) } }
     fun seek(time: Double) {
@@ -188,28 +188,28 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
             hz != null -> {
                 val band = (frequencyRatio(hz) * BANDS).toInt().coerceIn(0, BANDS - 1)
                 val db = frame?.let { (it.spectrum[band].toInt() and 255) / 255.0 * 85 - 100 }
-                "${formatTime(time)} · ${hz.roundToInt()} Hz · " + (db?.let { "%.1f dB".format(it) } ?: "无数据")
+                "${formatTime(time)} · ${hz.roundToInt()} Hz · " + (db?.let { "%.1f dB".format(it) } ?: "No data")
             }
             state.value.view == View.WAVEFORM -> {
                 val e = current?.envelopeIndex?.visible(TimeRange(max(0.0, time - .01), time + .01), 4)?.minByOrNull { abs(it.time - time) }
-                "${formatTime(time)} · " + (e?.let { "振幅 %.3f — %.3f".format(it.min, it.max) } ?: "无数据")
+                "${formatTime(time)} · " + (e?.let { "Amplitude %.3f — %.3f".format(it.min, it.max) } ?: "No data")
             }
-            else -> "${formatTime(time)} · " + (frame?.hz?.takeIf { it > 0 }?.let { "${noteName((69 + 12 * log2(it / 440.0)).roundToInt())} · %.1f Hz".format(it) } ?: "无稳定音高")
+            else -> "${formatTime(time)} · " + (frame?.hz?.takeIf { it > 0 }?.let { "${noteName((69 + 12 * log2(it / 440.0)).roundToInt())} · %.1f Hz".format(it) } ?: "No steady pitch")
         }
         mutable.update { it.copy(probe = text) }
     }
     fun probeSpectrum(hz: Double) {
         val spectrum = state.value.frame?.spectrum
         val bin = (hz * FFT_SIZE / SAMPLE_RATE).roundToInt().coerceIn(0, FFT_SIZE / 2 - 1)
-        mutable.update { it.copy(probe = "%.1f Hz · %s".format(hz, spectrum?.let { "%.1f dB".format(it[bin]) } ?: "无数据")) }
+        mutable.update { it.copy(probe = "%.1f Hz · %s".format(hz, spectrum?.let { "%.1f dB".format(it[bin]) } ?: "No data")) }
     }
-    fun import(uri: Uri) = work("导入") {
+    fun import(uri: Uri) = work("Import") {
         val session = getApplication<Application>().contentResolver.openInputStream(uri)!!.use { SessionCodec.import(repository, it) }
         session.close()
         withContext(Dispatchers.Main) { mutable.update { it.copy(busy = false, sessions = repository.list()) }; load(session.meta.id) }
     }
-    fun export(uri: Uri, kind: String) = work("导出") {
-        val session = current ?: error("没有可导出的会话")
+    fun export(uri: Uri, kind: String) = work("Export") {
+        val session = current ?: error("No session to export")
         require(!state.value.active)
         getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use { output ->
             when (kind) {
@@ -217,21 +217,21 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
                 "session" -> SessionCodec.export(session, output)
             }
         }
-        message("已导出")
+        message("Export complete")
     }
-    fun exportImage(uri: Uri, whole: Boolean) = work("保存图像") {
-        val session = current ?: error("没有可导出的会话")
+    fun exportImage(uri: Uri, whole: Boolean) = work("Save image") {
+        val session = current ?: error("No session to export")
         val s = state.value
         val range = if (whole) TimeRange(0.0, max(1.0, session.meta.duration)) else s.range
         app.pitchstudio.android.ui.ChartRenderer.export(getApplication<Application>(), uri, session, s, range)
-        message("图像已保存")
+        message("Image saved")
     }
-    fun rename(id: String, name: String) = work("重命名") {
+    fun rename(id: String, name: String) = work("Rename") {
         if (current?.meta?.id == id) { current!!.updateMeta(current!!.meta.copy(name = name.take(200))); current!!.checkpoint() }
         else repository.rename(id, name)
         mutable.update { it.copy(sessions = repository.list()) }
     }
-    fun delete(id: String) = work("删除") {
+    fun delete(id: String) = work("Delete") {
         withContext(Dispatchers.Main) {
             displaySave?.cancelAndJoin()
             if (current?.meta?.id == id) { pause(); player?.release(); player = null; current?.close(); current = null; mutable.value = StudioState(busy = true) }
@@ -243,12 +243,12 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         mutable.update { it.copy(busy = true) }
         viewModelScope.launch {
             try { withContext(Dispatchers.IO) { block() } }
-            catch (e: Exception) { if (e !is CancellationException) message("$label 失败：${e.message}") }
+            catch (e: Exception) { if (e !is CancellationException) message("$label failed: ${e.message}") }
             finally { mutable.update { it.copy(busy = false) } }
         }
     }
     override fun onCleared() {
-        engine.stop("应用已关闭，采集已结束"); player?.release(); piano.close()
+        engine.stop("Capture stopped because the app closed."); player?.release(); piano.close()
         Thread { engine.awaitStopped(10000); current?.close() }.start()
     }
 }

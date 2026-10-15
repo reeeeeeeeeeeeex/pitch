@@ -13,7 +13,7 @@ object SessionCodec {
     fun export(session: SessionHandle, output: OutputStream) {
         session.checkpoint()
         val m = session.meta
-        require(m.samples > 0 && m.complete) { "请先结束采集" }
+        require(m.samples > 0 && m.complete) { "Stop capture first" }
         val latest = session.latest
         val files = listOf(File(session.directory, "history.bin"), File(session.directory, "envelopes.bin"),
             session.wavFile.takeIf { m.recorded }, File(session.directory, "snapshot.bin").takeIf { latest != null })
@@ -35,13 +35,13 @@ object SessionCodec {
     fun import(repository: SessionRepository, input: InputStream): SessionHandle {
         val stream = DataInputStream(BufferedInputStream(input, 65536))
         val header = ByteArray(12); stream.readFully(header)
-        require(String(header, 0, 8, Charsets.US_ASCII) == "PITCHS01") { "不是支持的 .pitchsession 文件" }
+        require(String(header, 0, 8, Charsets.US_ASCII) == "PITCHS01") { "Not a supported .pitchsession file" }
         val manifestSize = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).getInt(8)
-        require(manifestSize in 1..65536) { "会话清单长度不合法" }
+        require(manifestSize in 1..65536) { "Invalid session manifest length" }
         val json = ByteArray(manifestSize); stream.readFully(json)
         val text = Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(json)).toString()
         val m = JsonParser.parseString(text).obj()
-        require(m.num("version", 1.0, 1.0) == 1.0) { "不支持此会话版本" }
+        require(m.num("version", 1.0, 1.0) == 1.0) { "Unsupported session version" }
         require(m.num("sampleRate", SAMPLE_RATE.toDouble(), SAMPLE_RATE.toDouble()) == SAMPLE_RATE.toDouble())
         val duration = m.num("duration", 1.0 / SAMPLE_RATE, MAX_SECONDS.toDouble())
         val samples = kotlin.math.round(duration * SAMPLE_RATE).toLong()
@@ -54,17 +54,17 @@ object SessionCodec {
         val lengths = lengthsElement.asJsonArray.map { element ->
             val n = number(element, 0.0, MAX_SESSION_BYTES.toDouble()); require(n % 1 == 0.0); n.toLong()
         }
-        require(lengths.sum() + manifestSize + 12 <= MAX_SESSION_BYTES) { "会话超过 256 MiB" }
+        require(lengths.sum() + manifestSize + 12 <= MAX_SESSION_BYTES) { "The session exceeds 256 MiB" }
         require(lengths[0] % FRAME_BYTES == 0L && lengths[0] <= 60000L * FRAME_BYTES)
         require(lengths[1] % 16 == 0L && lengths[1] <= 180001L * 16)
         require(lengths[3] == 0L || lengths[3] == (PITCH_SIZE + FFT_SIZE / 2) * 4L)
-        if (recorded) require(lengths[2] == 44 + samples * 2) { "WAV 时长或长度不匹配" }
+        if (recorded) require(lengths[2] == 44 + samples * 2) { "WAV duration or length does not match" }
         else require(lengths[2] == 0L)
         val d = m.get("display").obj()
         val display = parseDisplay(d)
         val settings = m.get("settings")?.takeUnless { it.isJsonNull }?.obj()?.let { s ->
             InputSettings(sampleRate = s.get("sampleRate")?.let { number(it, 8000.0, 384000.0).toInt() } ?: SAMPLE_RATE,
-                source = s.get("source")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString ?: "导入会话",
+                source = s.get("source")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString ?: "Import session",
                 echoCancellation = s.optionalBool("echoCancellation"), noiseSuppression = s.optionalBool("noiseSuppression"), autoGainControl = s.optionalBool("autoGainControl"))
         } ?: InputSettings()
         val snapshot = if (lengths[3] > 0) m.get("latest").obj().let { f ->
@@ -82,12 +82,12 @@ object SessionCodec {
                     output.fd.sync()
                 }
             }
-            require(stream.read() == -1) { "会话数据块长度不匹配" }
+            require(stream.read() == -1) { "Session block lengths do not match" }
             validateHistory(File(directory, "history.bin"), duration)
             validateEnvelopes(File(directory, "envelopes.bin"), duration)
             if (recorded) FileInputStream(File(directory, "recording.wav")).use { wav ->
                 val h = ByteArray(44); DataInputStream(wav).readFully(h)
-                require(h.contentEquals(wavHeader(samples))) { "不是 48 kHz 单声道 PCM WAV" }
+                require(h.contentEquals(wavHeader(samples))) { "Expected a 48 kHz mono PCM WAV file" }
             }
             if (snapshot != null) {
                 val data = ByteBuffer.wrap(File(directory, "snapshot.bin").readBytes()).order(ByteOrder.LITTLE_ENDIAN)
@@ -98,7 +98,7 @@ object SessionCodec {
             val meta = SessionMeta(id, name, createdAt, recorded, samples, lengths[0], lengths[1], complete = true, settings = settings, display = display)
             atomicText(File(directory, "meta.json"), gson.toJson(meta))
             return repository.open(id)
-        } catch (error: Exception) { directory.deleteRecursively(); throw IllegalArgumentException("会话导入失败：${error.message}", error) }
+        } catch (error: Exception) { directory.deleteRecursively(); throw IllegalArgumentException("Session import failed: ${error.message}", error) }
     }
     private fun validateHistory(file: File, duration: Double) {
         DataInputStream(file.inputStream()).use { input ->
@@ -136,10 +136,10 @@ object SessionCodec {
             choice("milliseconds", listOf(5, 10, 20, 50), 20), choice("gain", listOf(1, 2, 4, 8), 1), low,
             d.get("pitchFollowing")?.let { d.bool("pitchFollowing") } ?: true)
     }
-    private fun JsonElement?.obj(): JsonObject { require(this?.isJsonObject == true) { "会话清单不合法" }; return this.asJsonObject }
+    private fun JsonElement?.obj(): JsonObject { require(this?.isJsonObject == true) { "Invalid session manifest" }; return this.asJsonObject }
     private fun number(e: JsonElement?, low: Double, high: Double): Double {
-        require(e?.isJsonPrimitive == true && e.asJsonPrimitive.isNumber) { "会话数值不合法" }
-        return e.asDouble.also { require(it.isFinite() && it in low..high) { "会话数值越界" } }
+        require(e?.isJsonPrimitive == true && e.asJsonPrimitive.isNumber) { "Invalid numeric value in session" }
+        return e.asDouble.also { require(it.isFinite() && it in low..high) { "Session value is out of range" } }
     }
     private fun JsonObject.num(key: String, low: Double, high: Double) = number(get(key), low, high)
     private fun JsonObject.bool(key: String): Boolean { val e = get(key); require(e?.isJsonPrimitive == true && e.asJsonPrimitive.isBoolean); return e.asBoolean }

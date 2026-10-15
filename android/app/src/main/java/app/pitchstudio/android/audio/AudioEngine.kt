@@ -24,7 +24,7 @@ class AudioEngine(private val context: Context, private val repository: SessionR
         try { run.start { mutable.value = EngineState(active = true, session = session) } }
         catch (error: Exception) {
             session.close(); repository.delete(session.meta.id)
-            mutable.value = EngineState(message = error.message ?: "无法开始采集")
+            mutable.value = EngineState(message = error.message ?: "Unable to start capture")
             throw error
         }
     }
