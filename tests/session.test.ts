@@ -101,7 +101,7 @@ describe('binary session', () => {
       new DataView(head.buffer).setUint32(8, json.length, true);
       return new Blob([head, json, blob.slice(12 + new DataView(bytes.buffer).getUint32(8, true))]);
     };
-    await expect(decodeSession(change('version', 2))).rejects.toThrow('版本');
+    await expect(decodeSession(change('version', 2))).rejects.toThrow('version');
     await expect(decodeSession(change('duration', 1801))).rejects.toThrow();
     await expect(decodeSession(change('sampleRate', 44100))).rejects.toThrow();
   });

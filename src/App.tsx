@@ -35,24 +35,24 @@ import {
 const VIEWS = [
   {
     id: 'spectrum' as const,
-    name: '频谱图',
+    name: 'Spectrum',
     icon: ChartNoAxesCombined,
-    subtitle: '看见声音里的每一种频率',
-    helper: '横轴：频率 · 纵轴：相对强度',
+    subtitle: 'Explore the frequencies in your voice',
+    helper: 'Frequency on the x-axis · Relative level on the y-axis',
   },
   {
     id: 'spectrogram' as const,
-    name: '声谱图',
+    name: 'Spectrogram',
     icon: AudioLines,
-    subtitle: '看见频率随时间流动',
-    helper: '横轴：时间 · 纵轴：频率 · 颜色：强度',
+    subtitle: 'See how your sound changes over time',
+    helper: 'Time on the x-axis · Frequency on the y-axis · Color shows level',
   },
   {
     id: 'waveform' as const,
-    name: '波形图',
+    name: 'Waveform',
     icon: Waves,
-    subtitle: '看见声音每一次真实的振动',
-    helper: '横轴：时间 · 纵轴：采样振幅',
+    subtitle: 'See the shape of your sound',
+    helper: 'Time on the x-axis · Sample amplitude on the y-axis',
   },
 ];
 
@@ -62,7 +62,7 @@ interface FrozenView {
   endTime: number;
 }
 const settingLabel = (value: boolean | string | undefined) =>
-  value === undefined ? '未报告' : typeof value === 'string' ? value : value ? '已启用' : '已关闭';
+  value === undefined ? 'Not reported' : typeof value === 'string' ? value : value ? 'On' : 'Off';
 
 export default function App() {
   const [session] = useState(() => new AudioSession());
@@ -190,7 +190,7 @@ export default function App() {
         setCursor(null);
       });
     } catch (error) {
-      setFileError(error instanceof Error ? error.message : '文件无法打开');
+      setFileError(error instanceof Error ? error.message : 'Unable to open the file');
     } finally {
       setFileBusy(false);
     }
@@ -212,7 +212,7 @@ export default function App() {
         pitchLow,
       );
     } catch {
-      setFileError('图像保存失败，请重试。');
+      setFileError('Unable to save the image. Please try again.');
     }
   };
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -273,7 +273,7 @@ export default function App() {
         .catch(() => {
           if (request === pianoRequest.current)
             setPlaybackError(
-              '钢琴音色加载或播放失败，请检查连接与浏览器声音权限，再点击琴键重试。',
+              'Unable to load or play the piano sound. Check your connection and browser audio permissions, then try the key again.',
             );
         })
         .finally(() => {
@@ -307,37 +307,36 @@ export default function App() {
   };
   const noteStatus = !currentPitch
     ? running
-      ? '未检测到稳定音高'
-      : '等待你的声音'
+      ? 'No steady pitch detected'
+      : 'Ready when you are'
     : deviation !== null && Math.abs(deviation) <= 5
-      ? '音准居中，保持住'
+      ? 'In tune. Hold it there.'
       : deviation! > 0
-        ? '稍稍降低音高'
-        : '稍稍提高音高';
+        ? 'Try singing a little lower'
+        : 'Try singing a little higher';
 
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#" aria-label="声见首页">
+        <a className="brand" href="#" aria-label="Pitch Studio home">
           <span className="brand-mark">
             <Activity size={23} strokeWidth={1.7} />
           </span>
-          <h1>声见</h1>
-          <span className="brand-divider" />
-          <span className="brand-en">PITCH STUDIO</span>
+          <h1>Pitch Studio</h1>
         </a>
         <div className="header-right">
           <span className="privacy">
             <ShieldCheck size={14} />
-            声音只留在你的设备
+            Your audio stays on your device
           </span>
           <button
             className="help-button"
+            aria-label="Quick guide"
             aria-expanded={showHelp}
             onClick={() => setShowHelp(!showHelp)}
           >
             <CircleHelp size={17} />
-            <span>使用指南</span>
+            <span>Quick guide</span>
           </button>
         </div>
       </header>
@@ -347,42 +346,47 @@ export default function App() {
           <aside className="help-panel">
             <div>
               <Headphones size={18} />
-              <strong>三个简单的步骤</strong>
+              <strong>Get started in three steps</strong>
             </div>
-            <button aria-label="关闭指南" onClick={() => setShowHelp(false)}>
+            <button aria-label="Close guide" onClick={() => setShowHelp(false)}>
               <X size={16} />
             </button>
             <p>
-              ① 开启麦克风并允许访问。② 唱一个长音，切换三个页签观察。③
-              点击钢琴听参考音，再跟唱比较音准。
+              1. Turn on your microphone and allow access. 2. Hold a note and explore the three
+              views. 3. Play a piano key, then sing along to match its pitch.
             </p>
             <p>
-              频谱的峰表示不同频率的强度；声谱图记录它们的变化；波形显示振动。冻结只暂停图表，停止麦克风才会结束采集。
+              The spectrum shows the strength of each frequency, the spectrogram tracks changes over
+              time, and the waveform shows the signal itself. Freeze pauses the display; Stop
+              microphone ends capture.
             </p>
-            <p>适合单人发声。读数是数字信号电平，不是环境声压；设备自带的音效也可能改变输入。</p>
+            <p>
+              Designed for one voice at a time. Levels describe the digital signal, not room sound
+              pressure. Your device may also process the input.
+            </p>
           </aside>
         )}
 
-        <section className="input-strip" aria-label="麦克风控制">
+        <section className="input-strip" aria-label="Microphone controls">
           <div className="input-icon">
             <Mic size={19} />
           </div>
           <div className="input-device">
-            <label htmlFor="microphone">音频输入</label>
+            <label htmlFor="microphone">Audio input</label>
             <div className="select-wrapper">
               <select
                 id="microphone"
                 value={deviceId}
                 disabled={active || fileBusy}
                 onChange={(event) => setDeviceId(event.target.value)}
-                title={running ? '停止麦克风后可切换设备' : '选择输入设备'}
+                title={running ? 'Stop the microphone to change devices' : 'Choose an input device'}
               >
-                <option value="">{running ? snapshot.deviceLabel : '默认麦克风'}</option>
+                <option value="">{running ? snapshot.deviceLabel : 'Default microphone'}</option>
                 {devices
                   .filter((device) => device.deviceId && device.deviceId !== 'default')
                   .map((device, index) => (
                     <option key={device.deviceId} value={device.deviceId}>
-                      {device.label || `麦克风 ${index + 1}`}
+                      {device.label || `Microphone ${index + 1}`}
                     </option>
                   ))}
               </select>
@@ -398,13 +402,13 @@ export default function App() {
             <span>
               {running
                 ? data.recorded
-                  ? '正在录音'
-                  : '仅分析 · 未录音'
+                  ? 'Recording'
+                  : 'Analyzing · Audio is not being recorded'
                 : requesting
-                  ? '等待麦克风授权'
+                  ? 'Waiting for microphone permission'
                   : snapshot.status === 'error'
-                    ? '输入未连接'
-                    : '麦克风未开启'}
+                    ? 'Input disconnected'
+                    : 'Microphone off'}
             </span>
           </div>
           {running && (
@@ -419,12 +423,12 @@ export default function App() {
           >
             {running || requesting ? <Square size={15} fill="currentColor" /> : <Mic size={17} />}
             {running
-              ? '停止麦克风'
+              ? 'Stop microphone'
               : requesting
-                ? '取消'
+                ? 'Cancel'
                 : snapshot.status === 'stopping'
-                  ? '正在结束…'
-                  : '开启麦克风'}
+                  ? 'Finishing…'
+                  : 'Start microphone'}
           </button>
           {!active && (
             <button
@@ -432,24 +436,24 @@ export default function App() {
               disabled={fileBusy}
               onClick={() => start(true)}
             >
-              ● 开始录音
+              ● Start recording
             </button>
           )}
         </section>
-        <section className="session-tools panel" aria-label="会话与保存">
+        <section className="session-tools panel" aria-label="Session and exports">
           <div className="session-info">
             <strong data-testid="session-duration">{formatTime(data.duration, true)}</strong>
             <span>
               {active
                 ? data.recorded
-                  ? '录音中 · WAV 48 kHz / 单声道 / 16 位'
-                  : '仅分析'
+                  ? 'Recording · WAV 48 kHz / mono / 16-bit'
+                  : 'Analyze only'
                 : data.duration
                   ? data.recorded
-                    ? '录音已保留'
-                    : '分析已保留'
-                  : '开启麦克风仅分析，或选择开始录音'}{' '}
-              · 最长 30 分钟
+                    ? 'Recording ready'
+                    : 'Analysis ready'
+                  : 'Start the microphone to analyze, or record to keep the audio'}{' '}
+              · Up to 30 minutes
             </span>
           </div>
           <div className="session-actions">
@@ -457,18 +461,18 @@ export default function App() {
               disabled={active || fileBusy || !data.wav}
               onClick={() => downloadBlob(data.wav!, data.name + '.wav')}
             >
-              下载 WAV
+              Download WAV
             </button>
             <button disabled={active || fileBusy || !data.duration} onClick={saveSession}>
-              保存完整会话
+              Save session
             </button>
             <button disabled={active || fileBusy} onClick={() => importRef.current?.click()}>
-              {fileBusy ? '正在读取…' : '打开会话'}
+              {fileBusy ? 'Opening…' : 'Open session'}
             </button>
             <input
               ref={importRef}
               hidden
-              aria-label="导入会话文件"
+              aria-label="Import session file"
               type="file"
               accept=".pitchsession"
               onChange={(event) => {
@@ -479,16 +483,16 @@ export default function App() {
             />
             <span className="muted small">
               {snapshot.dirty
-                ? '会话尚未保存'
+                ? 'Unsaved session'
                 : data.duration
-                  ? '会话已导出或导入'
-                  : '文件仅在本机处理'}
+                  ? 'Session saved or opened from a file'
+                  : 'Files are processed on your device'}
             </span>
           </div>
           {!active && audioUrl && (
             <audio
               ref={audioRef}
-              aria-label="录音回放"
+              aria-label="Recording playback"
               controls
               src={audioUrl}
               onTimeUpdate={(event) => {
@@ -518,8 +522,11 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="unsaved-title"
           >
-            <h2 id="unsaved-title">保存当前会话？</h2>
-            <p>当前结果尚未保存为完整会话。继续后将替换它；WAV 或 PNG 无法单独恢复全部分析数据。</p>
+            <h2 id="unsaved-title">Save this session?</h2>
+            <p>
+              This session has not been saved. Continuing will replace it. A WAV or PNG alone cannot
+              restore all of your analysis data.
+            </p>
             <div>
               <button
                 autoFocus
@@ -530,7 +537,7 @@ export default function App() {
                   action();
                 }}
               >
-                保存并继续
+                Save and continue
               </button>
               <button
                 onClick={() => {
@@ -539,23 +546,23 @@ export default function App() {
                   action();
                 }}
               >
-                放弃并继续
+                Discard and continue
               </button>
-              <button onClick={() => setPending(null)}>取消</button>
+              <button onClick={() => setPending(null)}>Cancel</button>
             </div>
           </dialog>
         )}
         {snapshot.error && (
           <div className="error-banner" role="alert">
             {snapshot.error}
-            <button onClick={() => start(data.recorded)}>重试</button>
+            <button onClick={() => start(data.recorded)}>Retry</button>
           </div>
         )}
 
-        <section className="panel tuner-panel" aria-label="实时调音器">
+        <section className="panel tuner-panel" aria-label="Live tuner">
           <div className="tuner-readout">
             <div className="label-row">
-              <span className="eyebrow">实时音高</span>
+              <span className="eyebrow">Live pitch</span>
               <span className={`live-tag ${running ? 'on' : ''}`}>LIVE</span>
             </div>
             <div className="note-line">
@@ -580,7 +587,7 @@ export default function App() {
           <div className="tuning-center">
             <div className="label-row">
               <span className="eyebrow">
-                {target === null ? '音准偏差' : `目标 ${noteName(target)} 的偏差`}
+                {target === null ? 'Pitch offset' : `Offset from ${noteName(target)}`}
               </span>
               <span className="cents-value" data-testid="cents">
                 {deviation === null
@@ -606,19 +613,19 @@ export default function App() {
             </div>
             <div className="tuning-labels">
               <span>
-                −50 <small>偏低</small>
+                −50 <small>Flat</small>
               </span>
               <span>0</span>
               <span>
-                <small>偏高</small> +50
+                <small>Sharp</small> +50
               </span>
             </div>
             <div className="level-row">
-              <span>输入电平</span>
+              <span>Input level</span>
               <div
                 className="level-meter"
                 role="meter"
-                aria-label="麦克风输入电平"
+                aria-label="Microphone input level"
                 aria-valuemin={-60}
                 aria-valuemax={0}
                 aria-valuenow={Number.isFinite(db) ? Math.max(-60, Math.min(0, db)) : -60}
@@ -631,20 +638,22 @@ export default function App() {
               <span className="db-readout">{Number.isFinite(db) ? db.toFixed(0) : '−∞'} dBFS</span>
             </div>
             {snapshot.frame && snapshot.frame.peak >= 0.99 && (
-              <span className="clip-warning">输入接近削波，请降低麦克风增益</span>
+              <span className="clip-warning">
+                Input is close to clipping. Lower your microphone gain.
+              </span>
             )}
           </div>
           <div className="history-area">
             <div className="label-row">
-              <span className="eyebrow">音高轨迹</span>
+              <span className="eyebrow">Pitch trace</span>
               <span className="muted small">
                 {formatTime(range.start)} — {formatTime(range.end)}
-                {frozen ? ' · 已冻结' : ''}
+                {frozen ? ' · Frozen' : ''}
               </span>
             </div>
             <div className="pitch-controls">
               <span className="pitch-range" role="status">
-                {noteName(pitchLow)} — {noteName(pitchLow + PITCH_SPAN)} · 两个八度
+                {noteName(pitchLow)} — {noteName(pitchLow + PITCH_SPAN)} · Two octaves
               </span>
             </div>
             <div className="pitch-viewport">
@@ -663,8 +672,8 @@ export default function App() {
               />
               <div className="pitch-scrollbar">
                 <button
-                  aria-label="音域升高一个半音"
-                  title="音域升高一个半音"
+                  aria-label="Move pitch range up one semitone"
+                  title="Move pitch range up one semitone"
                   disabled={pitchLow === PITCH_MAX_LOW}
                   onClick={() => panPitch(pitchLow + 1)}
                 >
@@ -672,9 +681,9 @@ export default function App() {
                 </button>
                 <input
                   type="range"
-                  aria-label="音高显示音域"
+                  aria-label="Pitch display range"
                   aria-orientation="vertical"
-                  aria-valuetext={`${noteName(pitchLow)} 至 ${noteName(pitchLow + PITCH_SPAN)}`}
+                  aria-valuetext={`${noteName(pitchLow)} to ${noteName(pitchLow + PITCH_SPAN)}`}
                   min={PITCH_MIN_LOW}
                   max={PITCH_MAX_LOW}
                   step={1}
@@ -686,8 +695,8 @@ export default function App() {
                   onLostPointerCapture={() => setPitchDragging(false)}
                 />
                 <button
-                  aria-label="音域降低一个半音"
-                  title="音域降低一个半音"
+                  aria-label="Move pitch range down one semitone"
+                  title="Move pitch range down one semitone"
                   disabled={pitchLow === PITCH_MIN_LOW}
                   onClick={() => panPitch(pitchLow - 1)}
                 >
@@ -695,13 +704,16 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <p className="pitch-hint">实时随声音移动 · 回放时可上下拖动调整音域，点击曲线定位</p>
+            <p className="pitch-hint">
+              Follows your pitch live. During playback, drag vertically to adjust the range or click
+              the trace to seek.
+            </p>
           </div>
         </section>
 
-        <section className="panel analysis-panel" aria-label="声音可视化">
+        <section className="panel analysis-panel" aria-label="Audio visualizations">
           <div className="analysis-toolbar">
-            <div className="tabs" role="tablist" aria-label="声音分析视图">
+            <div className="tabs" role="tablist" aria-label="Audio analysis views">
               {VIEWS.map((item, index) => (
                 <button
                   key={item.id}
@@ -740,7 +752,7 @@ export default function App() {
               aria-pressed={!!frozen}
             >
               {frozen ? <Play size={13} /> : <Pause size={13} />}
-              {frozen ? '恢复实时' : '冻结画面'}
+              {frozen ? 'Resume display' : 'Freeze display'}
             </button>
           </div>
           <div id="analysis-content" role="tabpanel" aria-labelledby={`tab-${view}`} tabIndex={0}>
@@ -753,9 +765,9 @@ export default function App() {
                 {view === 'waveform' ? (
                   <>
                     <label>
-                      窗口
+                      Window
                       <select
-                        aria-label="波形时间窗口"
+                        aria-label="Waveform time window"
                         value={waveformWindow}
                         onChange={(event) => setMilliseconds(Number(event.target.value))}
                       >
@@ -767,9 +779,9 @@ export default function App() {
                       </select>
                     </label>
                     <label>
-                      放大
+                      Zoom
                       <select
-                        aria-label="波形显示放大"
+                        aria-label="Waveform zoom"
                         value={gain}
                         onChange={(event) => setGain(Number(event.target.value))}
                       >
@@ -783,7 +795,7 @@ export default function App() {
                   </>
                 ) : (
                   <span className="range-label">
-                    50 Hz — 8 kHz <span>·</span> 对数刻度
+                    50 Hz — 8 kHz <span>·</span> Log scale
                   </span>
                 )}
               </div>
@@ -801,7 +813,7 @@ export default function App() {
             )}
             {view === 'waveform' && (
               <p className="detail-caption">
-                实时振动细节 · 下图为最后采集的毫秒快照，不随历史播放变化
+                Waveform detail · Latest captured snapshot; does not follow playback
               </p>
             )}
             {view !== 'spectrogram' && (
@@ -819,7 +831,7 @@ export default function App() {
             <div className="chart-footer">
               {view === 'spectrum' ? (
                 <div className="peak-list">
-                  <span>频率峰值</span>
+                  <span>Frequency peaks</span>
                   {peaks.length ? (
                     peaks.map((peak, index) => (
                       <span className="peak-chip" key={index}>
@@ -829,43 +841,45 @@ export default function App() {
                       </span>
                     ))
                   ) : (
-                    <span className="muted">等待声音输入</span>
+                    <span className="muted">Waiting for audio</span>
                   )}
                 </div>
               ) : view === 'spectrogram' ? (
                 <div className="color-legend">
-                  <span>弱</span>
+                  <span>Low</span>
                   <i />
-                  <span>强</span>
-                  <small>−100 至 −15 dB</small>
+                  <span>High</span>
+                  <small>−100 to −15 dB</small>
                 </div>
               ) : (
                 <span>
-                  正向过零触发 <b>·</b>{' '}
-                  {gain > 1 ? `${gain}× 仅放大显示，悬停读数为原始振幅` : '悬停查看原始采样振幅'}
+                  Rising zero-crossing trigger <b>·</b>{' '}
+                  {gain > 1
+                    ? `${gain}× visual zoom; hover values show the original amplitude`
+                    : 'Hover to see the original sample amplitude'}
                 </span>
               )}
               <span className="chart-note">
                 {frozen
-                  ? '采集继续 · 图表已冻结'
+                  ? 'Display frozen · Capture continues'
                   : !running && displayedFrame
-                    ? '已停止 · 保留最后画面'
+                    ? 'Stopped · Showing the last frame'
                     : view === 'spectrogram'
-                      ? '会话时间 · 空缺表示无分析数据'
+                      ? 'Session time · Gaps indicate missing analysis'
                       : view === 'spectrum' && frameSize
-                        ? `频率间隔 ${frameSize.toFixed(2)} Hz`
-                        : '悬停查看数值'}
+                        ? `Bin spacing: ${frameSize.toFixed(2)} Hz`
+                        : 'Hover for details'}
               </span>
             </div>
           </div>
         </section>
 
-        <section className="panel timeline-controls" aria-label="时间轴导航">
+        <section className="panel timeline-controls" aria-label="Timeline navigation">
           <div className="timeline-toolbar">
             <label>
-              显示范围{' '}
+              Time range{' '}
               <select
-                aria-label="时间轴范围"
+                aria-label="Timeline range"
                 value={windowSeconds}
                 onChange={(event) => {
                   const seconds = Number(event.target.value);
@@ -873,11 +887,11 @@ export default function App() {
                   setViewStart(range.start);
                 }}
               >
-                <option value={10}>10 秒</option>
-                <option value={30}>30 秒</option>
-                <option value={60}>1 分钟</option>
-                <option value={300}>5 分钟</option>
-                <option value={0}>整段概览</option>
+                <option value={10}>10 sec</option>
+                <option value={30}>30 sec</option>
+                <option value={60}>1 min</option>
+                <option value={300}>5 min</option>
+                <option value={0}>Full session</option>
               </select>
             </label>
             <button
@@ -886,31 +900,36 @@ export default function App() {
                 setFollowing(true);
               }}
             >
-              回到实时
+              Go live
             </button>
             <span className="muted small">
-              {following && !frozen ? '自动跟随' : active ? '正在回看 · 采集不受影响' : '正在回看'}{' '}
-              · 拖动下方波形或左右滚动定位
+              {following && !frozen
+                ? 'Following live'
+                : active
+                  ? 'Browsing history · Capture continues'
+                  : 'Browsing history'}{' '}
+              · Drag the waveform below or scroll horizontally to navigate
             </span>
             <label>
-              图像范围{' '}
+              Image range{' '}
               <select
-                aria-label="图像范围"
+                aria-label="Image range"
                 value={imageScope}
                 disabled={view === 'spectrum'}
                 onChange={(event) => setImageScope(event.target.value)}
               >
-                <option value="visible">当前可见范围</option>
-                <option value="whole">整段概览</option>
+                <option value="visible">Visible range</option>
+                <option value="whole">Full session</option>
               </select>
             </label>
             <button disabled={!data.duration} onClick={() => void exportImage()}>
-              保存 PNG
+              Save PNG
             </button>
           </div>
           <Navigator data={data} range={range} revision={snapshot.revision} onNavigate={navigate} />
           <p className="muted small">
-            停止录音后，点击音高曲线、声谱图或波形概览可跳转播放位置。刷新前请保存完整会话。
+            After recording, click the pitch trace, spectrogram, or waveform overview to seek. Save
+            your session before refreshing the page.
           </p>
         </section>
         <Piano
@@ -928,34 +947,40 @@ export default function App() {
         <div className="bottom-row">
           <span>
             <ShieldCheck size={13} />
-            本地处理 · 仅“开始录音”保存声音 · 不上传
+            Processed on your device · Only Record keeps audio · No uploads
           </span>
           <details className="capture-settings">
             <summary>
               <SlidersHorizontal size={13} />
-              采集状态
+              Capture details
               <ChevronDown size={12} />
             </summary>
             <div className="settings-popover">
-              <strong>浏览器实际采集设置</strong>
+              <strong>Settings reported by your browser</strong>
               {snapshot.settings ? (
                 <>
                   <span>
-                    回声消除 <b>{settingLabel(snapshot.settings.echoCancellation)}</b>
+                    Echo cancellation <b>{settingLabel(snapshot.settings.echoCancellation)}</b>
                   </span>
                   <span>
-                    自动增益 <b>{settingLabel(snapshot.settings.autoGainControl)}</b>
+                    Automatic gain control <b>{settingLabel(snapshot.settings.autoGainControl)}</b>
                   </span>
                   <span>
-                    降噪 <b>{settingLabel(snapshot.settings.noiseSuppression)}</b>
+                    Noise suppression <b>{settingLabel(snapshot.settings.noiseSuppression)}</b>
                   </span>
                   <span>
-                    设备采样率 <b>{snapshot.settings.sampleRate ?? '未报告'} Hz</b>
+                    Device sample rate <b>{snapshot.settings.sampleRate ?? 'Not reported'} Hz</b>
                   </span>
-                  <p>已请求关闭音频处理。此处显示浏览器报告值，设备自带处理可能仍然生效。</p>
+                  <p>
+                    Audio processing was requested off. These are the settings reported by your
+                    browser; device processing may still apply.
+                  </p>
                 </>
               ) : (
-                <p>开启麦克风后查看。会请求关闭回声消除、降噪和自动增益。</p>
+                <p>
+                  Start the microphone to see its settings. Echo cancellation, noise suppression,
+                  and automatic gain control are requested off.
+                </p>
               )}
             </div>
           </details>

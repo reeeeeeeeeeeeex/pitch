@@ -1,112 +1,140 @@
-# 声见 · Pitch Studio
+# Pitch Studio
 
-本机运行的人声调音、声音可视化和录音工具。React + TypeScript + Vite + Web Audio + Canvas 2D；无需账号、后端或云端音频服务。
+**English** | [简体中文](README.zh-CN.md)
 
-另有独立的 [Android 原生版](android/README.md)：Kotlin / Jetpack Compose，支持 Android 10+、前台录音、本机会话、四类图表和 88 键采样钢琴，与网页互通 `.pitchsession` 文件。构建与安装说明、设备验证记录在 `android/` 中。
+A local-first voice practice tool for the web and Android, with real-time pitch tracking, audio visualizations, recording, and an 88-key reference piano.
 
-## 开始使用
+Hold a note, see how it moves, and compare it with a piano reference. Explore the frequencies in your voice, review a recording, or save a session to pick up where you left off. Audio is processed on your device, with no account, backend, or cloud audio service required.
 
-需要 Node.js 22.12+。此工作区已安装依赖。
+The web app uses React, TypeScript, Vite, Web Audio, and Canvas 2D. The independent [native Android app](android/README.md) uses Kotlin and Jetpack Compose, runs offline on Android 10+, and exchanges `.pitchsession` files with the web app. Both interfaces are in English; documentation is available in English and Simplified Chinese.
 
-```powershell
+## What you can do
+
+- **Practice your pitch.** See the detected note, frequency, cents offset, and input level. The pitch trace follows your voice across a two-octave viewport.
+- **Explore your sound.** Switch between a frequency spectrum, a scrolling spectrogram, and a waveform with a separate millisecond detail view.
+- **Sing along with a piano.** Play any of 88 keys, from A0 to C8. Your target note and detected note are highlighted separately.
+- **Record and review.** Capture up to 30 minutes, browse the shared timeline, and seek through a recording by clicking a time-based chart.
+- **Keep your work.** Export WAV audio, PNG charts, or a complete session that can be reopened on either platform.
+
+## Run the web app
+
+Install Node.js 22.12 or later, then run these commands from the repository root:
+
+```sh
 npm ci
 npm run dev
 ```
 
-打开 <http://127.0.0.1:5173/>。Windows 也可以双击 `启动声见.cmd`。开发端口固定为 5173，不会自动换端口。
+Open <http://127.0.0.1:5173/>. On Windows, you can also double-click `Start-Pitch-Studio.cmd`. The development server uses port 5173 and does not silently switch ports if it is occupied.
 
-- **开启麦克风**：仅分析，保留图表历史，不保存可播放的声音。
-- **开始录音**：从 `00:00` 建立新会话，同时录音与分析。
-- **停止麦克风**：结束采集并释放设备，保留结果。录音线程会先送回最后一段样本。
-- **打开会话**：读取之前保存的 `.pitchsession`，无需麦克风即可回看、播放和导出。
+1. Choose **Start microphone** for live analysis without recording audio, or **Start recording** to begin a new recording at `00:00`.
+2. Allow microphone access, then speak or hold a note. Switch views to inspect your sound.
+3. Play a piano key to set a target and sing along. Headphones keep the reference sound out of the microphone.
+4. Choose **Stop microphone** to end capture and release the device. Results remain available for review and export.
 
-每次最长 30 分钟，到时自动结束，不覆盖开头。新建或导入前，未保存的会话提供「保存并继续／放弃并继续／取消」。刷新或关闭网页前请保存完整会话；本工具不自动存入浏览器数据库。
+**Open session** loads a `.pitchsession` without microphone access. Before replacing an unsaved session, the app offers **Save and continue**, **Discard and continue**, or **Cancel**. Save a complete session before refreshing or closing the page; the web app does not automatically store sessions in a browser database.
 
-```powershell
+To build and preview the production bundle:
+
+```sh
 npm run build
 npm run preview
 ```
 
-生产预览地址为 <http://127.0.0.1:4173/>。`dist/` 可部署至 HTTPS 静态网站，必须同时包含 `capture-worklet.js` 和 `piano/` 采样目录。本项目未部署公网。普通局域网 HTTP 地址通常不能获取麦克风权限。
+The preview runs at <http://127.0.0.1:4173/>. You can serve `dist/` from an HTTPS static host; include `capture-worklet.js` and the `piano/` sample directory. Microphone access requires localhost or HTTPS. A plain HTTP address on your local network generally will not work.
 
-## 时间轴、播放与保存
+## Timeline, playback, and exports
 
-音高轨迹、声谱图、连续波形概览使用同一时间范围，横轴为会话起点开始的 `mm:ss`。
+The pitch trace, spectrogram, and continuous waveform overview share a time range. Their horizontal axis shows `mm:ss` from the start of the session.
 
-- 默认显示 30 秒；也可选择 10 秒、1 分钟、5 分钟、整段概览。
-- 起初从左往右绘制，窗口填满后向左滚动。拖动底部波形导航条、使用滑块或滚轮定位历史；手动回看后暂停自动跟随，点击「回到实时」恢复。
-- 冻结只暂停图表，录音和分析继续。停止后的录音可通过播放器播放、暂停、拖动进度；点击时间图跳转，黄色播放游标在各时间图同步显示。采集过程中不播放历史录音。
-- 波形页包含秒／分钟尺度的**连续振幅概览**和 5／10／20／50 ms 的**振动细节**。后者是最后采集的实时快照，不随历史播放变化；可放大 1／2／4／8 倍，悬停显示原始采样振幅。
+- The default window is 30 seconds. Choose 10 seconds, 1 minute, 5 minutes, or the full session instead.
+- Charts fill from left to right, then scroll. Drag the waveform navigator, use its slider, or scroll horizontally to browse history. **Go live** resumes automatic time following.
+- **Freeze display** pauses the charts while capture and analysis continue. After capture stops, the audio player supports play, pause, and seeking. Clicking a time-based chart moves the shared yellow playback cursor. Historical audio cannot play during capture.
+- The waveform view includes a continuous amplitude overview and a 5/10/20/50 ms detail view with 1×/2×/4×/8× visual zoom. The detail view shows the latest captured snapshot, not the playback position; hover values report the original sample amplitude.
 
-三个独立导出操作：
+| Export           | Contents                                                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Download WAV** | 48 kHz, mono, signed 16-bit PCM. A 30-minute recording is exactly 172,800,044 bytes, including the 44-byte header.                                                                                                                 |
+| **Save PNG**     | A 1600 × 1240 image with the pitch trace, selected analysis view, time labels, and units. Spectrograms include a color scale. Time-based charts support the visible range or full session; the spectrum uses the current snapshot. |
+| **Save session** | A `.pitchsession` file containing audio when recorded, analysis history, capture and display settings, and the final live snapshot.                                                                                                |
 
-| 操作         | 内容                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| 下载 WAV     | 48 kHz、单声道、16 位有符号 PCM；30 分钟精确为 172,800,044 字节（含 44 字节文件头）                                       |
-| 保存 PNG     | 1600 × 1240 固定宽度图像，包含音高轨迹、当前分析图、时间与单位；声谱附色尺。时间图可选可见范围或整段，频谱保存当前瞬时快照 |
-| 保存完整会话 | `.pitchsession`，包含录音（若有）、所有历史、采集与显示参数及最后的实时快照，可再次打开                                   |
+Only **Save session** clears the unsaved-session state: WAV and PNG exports cannot restore the complete analysis. Analysis-only sessions can also be saved and reopened. Invalid, oversized, or unsupported imports leave the current session intact.
 
-WAV 与 PNG 不能单独恢复所有分析结果，只有「保存完整会话」解除会话的未保存状态。导入损坏、超限或不支持版本的文件时，当前结果保持不变。仅分析的会话也可以保存、重新打开。
+## Pitch and analysis views
 
-## 调音与图表
+**Pitch tracking.** The web pitch chart is 560 px tall and spans two octaves, with 25 labeled semitone lines and emphasized C notes. It starts at C3–C5. During capture, a valid pitch moves the range to follow your voice. After a manual adjustment, the next valid pitch resumes following; silence, dragging, and a frozen display preserve the chosen range. During review or playback, a manual adjustment stays in place. Drag vertically, scroll, use the range slider or arrow buttons, or focus the chart and use the arrow keys for semitones and Page Up/Down for octaves. Range changes do not affect capture or the time window.
 
-- 实时音名、Hz、音分偏差、输入电平；音高曲线高 560 px，纵轴固定两个八度，25 条半音线（含两端）逐条标注音名，C 音加重。
-- 音域默认 C3–C5。采集时检测到有效音高就自动跟随；手动调整结束后，下一帧有效音高恢复跟随，无需模式按钮。静音、拖动中或画面冻结时保留手动位置。回看／回放默认跟随可见音高或播放位置，手动调整后保留该音域。支持拖动图表、滚轮、右侧纵向滑块和上下按钮；图表获得键盘焦点后，方向键移动半音，Page Up / Down 移动八度。手动调整音域不改变时间范围或采集状态。
-- 完整会话保存音域和回放时是否保留手动位置；旧会话默认自动定位。再次采集时始终随有效音高移动。PNG 使用当前选定的两八度音域并标注范围，范围外的音高轨迹不在图中显示。
-- **频谱图**：50–8000 Hz 对数坐标，独立频率峰值，以及可靠基频对应的谐波参考线。此视图始终显示实时或最后快照。
-- **声谱图**：时间／频率热图，512 个对数频段，强度量化为 8 位，显示 −100 至 −15 dB 色尺。历史查询或悬停保留分析缺口。
-- **参考钢琴**：标准 88 键 A0–C8（52 白键、36 黑键），A4 = 440 Hz；选定琴键成为练习目标，检测到的音符单独高亮。窄屏横向滚动。参考音使用独立输出，不直接接入分析。
-- 麦克风选择、权限等待与取消、错误重试、设备断开时保留已收到的声音；中文深色界面、窄屏和键盘支持。
+Sessions preserve the selected range and playback-follow preference; older files use automatic positioning. Starting capture resumes live pitch following. PNG exports use the current two-octave range, label its endpoints, and omit pitches outside it.
 
-建议佩戴耳机试听。麦克风不直接回放，但外放参考音可能从空气进入麦克风。
+**Spectrum.** A logarithmic 50–8000 Hz view shows frequency peaks and harmonic guides when a reliable fundamental is detected. It always shows the live or final snapshot.
 
-钢琴音色采用 [Salamander Grand Piano](https://github.com/Tonejs/audio/tree/master/salamander)：Alexander Holm 录制的 Yamaha C5，CC BY 3.0 授权。30 个 MP3 采样共约 2 MB，随网页提供，运行时无需外部音频服务。首次点击按需加载，之后缓存；相邻音最多移调一个半音。采用单力度采样，每次点击播放自然衰减并在最长 4 秒内淡出，最多保留 8 个发声音符及 8 个解码缓存；不包含完整音源的 16 层力度、踏板和共鸣模型。来源、授权及文件校验信息见 `public/piano/salamander/ATTRIBUTION.txt` 和 `source.json`。
+**Spectrogram.** A time/frequency heatmap stores 512 logarithmic frequency bands as 8-bit intensities, with a −100 to −15 dB scale. Gaps in analysis remain visible when reviewing or hovering over history.
 
-## 数据结构与边界
+**Reference piano.** The keyboard has 52 white keys and 36 black keys, covering A0–C8 with A4 = 440 Hz. It scrolls horizontally on narrow screens. Reference audio uses a separate output and is not routed directly into analysis, although speakers can feed it back through the air.
 
-- `src/audio/session.ts` 统一管理 48 kHz 音频会话。浏览器将设备输入转换到此采样率，并通过单声道节点送入采集与分析支路。
-- `public/capture-worklet.js` 在音频线程连续收集 PCM，每秒发送一个录音块，每 10 ms 计算波形包络；停止时刷新部分块。按实际采样数计算时长，在 86,400,000 个样本处结束。
-- 4096 点时域窗口供 Pitchy McLeod 算法估计音高；8192 点 FFT 供频谱。音高要求至少 −60 dBFS RMS 与 0.9 清晰度，不能把最强 FFT 峰直接当成基频。
-- 约每秒分析 30 次，以 `AudioContext.currentTime` 相对 worklet 起点标记时间。分析缺失不补帧。音频上下文暂停时音频时钟也暂停，因此不会凭空填入静音；主线程阻塞而音频线程继续时，WAV 连续、分析保留缺口。
-- 短期完整帧仅保留约 10 秒／最多 360 帧。长期历史以 256 帧为一块保存音高、电平、512 字节声谱列；包络使用多级极值概览。按时间二分定位，渲染只查询可见范围，并按画布宽度限制点数。
-- 30 分钟原始 WAV 约 173 MB，历史声谱约 29 MB，另有包络、浏览器播放及文件导出内存。不会将音频转成 Base64；文件只在本机处理。实际内存与响应速度取决于浏览器和设备。
-- 频谱 dB 与电平 dBFS 属于数字信号读数，不是经声学校准的 dB SPL。音名识别面向单人发声，不提供多人和声识别。
-- 请求关闭回声消除、降噪和自动增益，并显示浏览器实际设置。设备固件可能仍处理声音。
+The app supports microphone selection, canceling a pending permission request, retrying errors, and retaining received audio after a device disconnects. The web interface supports keyboard navigation and narrow screens.
 
-## 会话格式 v1
+## Audio processing and limits
 
-采用小端整数与浮点，文件上限 256 MiB；清单 UTF-8 长度最多 64 KiB。
+- `src/audio/session.ts` manages a 48 kHz session. The browser converts device input to this rate and routes mono audio to capture and analysis.
+- `public/capture-worklet.js` collects continuous PCM on the audio thread, sends a recording block every second, and computes waveform envelopes every 10 ms. Stopping flushes the final partial block. Duration comes from the actual sample count; capture stops at 86,400,000 samples without overwriting the beginning.
+- A 4096-sample window feeds Pitchy's McLeod pitch detector; a separate 8192-point FFT supplies the spectrum. Pitch requires at least −60 dBFS RMS and 0.9 clarity. The strongest FFT peak is not assumed to be the fundamental.
+- Analysis runs roughly 30 times per second, timestamped with `AudioContext.currentTime` relative to the worklet start. Missing analysis is not filled in. Suspending the audio context also pauses its clock; a blocked main thread can leave analysis gaps while the audio thread keeps recording.
+- Full analysis frames are retained for about 10 seconds, capped at 360 frames. Long-term history stores pitch, level, and 512-byte spectrum columns in blocks of 256 frames. Waveform envelopes use multiresolution extrema. Rendering queries only the visible range and limits point counts to the canvas width.
+- A 30-minute WAV is about 173 MB, with roughly 29 MB of spectrogram history plus envelopes, playback, and export overhead. Audio is not converted to Base64. Files are processed locally; memory use and responsiveness depend on the device and browser.
+- Level readings are digital dBFS, and spectrum values describe the digital signal, not calibrated dB SPL. Pitch detection is intended for one person speaking or singing, not polyphonic transcription.
+- The app requests echo cancellation, noise suppression, and automatic gain control off, and displays the browser's reported settings. Device firmware may still process the input.
 
-| 顺序      | 内容                                                                                                 |
-| --------- | ---------------------------------------------------------------------------------------------------- |
-| 0–7 字节  | ASCII `PITCHS01`                                                                                     |
-| 8–11 字节 | uint32，JSON 清单字节长度                                                                            |
-| JSON      | `version: 1`、名称、创建时间、时长、采样率、是否录音、设置、显示参数、4 个块长度、最后快照元数据     |
-| 块 0      | 历史帧，每帧 536 字节：float64 时间；4 个 float32（Hz、清晰度、RMS dBFS、峰值）；512 个 uint8 声谱值 |
-| 块 1      | 每个包络 16 字节：float64 时间，float32 最小值、最大值                                               |
-| 块 2      | 完整 PCM WAV，或仅分析会话的空块                                                                     |
-| 块 3      | 最后快照：4096 个 float32 波形值 + 4096 个 float32 FFT dB 值；没有快照时为空                         |
+There is no system-audio capture, exercise scoring, chord recognition, or desktop installer.
 
-导入逐项检查版本、文件总长与各块长度、WAV 头和样本数、时间单调性、数值及时长范围。不会执行文件中的内容。会话不包含实时瞬时频谱的完整历史，也不支持导入任意 WAV/MP3 重新分析。
+## Session format v1
 
-## 验证与维护
+The format uses little-endian integers and floating-point values. Files are limited to 256 MiB, with a UTF-8 JSON manifest of at most 64 KiB.
 
-```powershell
+| Order      | Contents                                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bytes 0–7  | ASCII `PITCHS01`                                                                                                                                    |
+| Bytes 8–11 | `uint32` manifest length in bytes                                                                                                                   |
+| JSON       | `version: 1`, name, creation time, duration, sample rate, recording flag, capture/display settings, four block lengths, and final-snapshot metadata |
+| Block 0    | History frames, 536 bytes each: `float64` time; four `float32` values for Hz, clarity, RMS dBFS, and peak; 512 `uint8` spectrum values              |
+| Block 1    | Envelopes, 16 bytes each: `float64` time and `float32` minimum/maximum                                                                              |
+| Block 2    | Complete PCM WAV, or an empty block for an analysis-only session                                                                                    |
+| Block 3    | Final snapshot: 4096 `float32` waveform samples and 4096 `float32` FFT dB values; empty if no snapshot exists                                       |
+
+Imports validate the version, total and block lengths, WAV header and sample count, monotonic timestamps, numeric values, and duration. Imported files are treated as data. Sessions do not store the full history of instantaneous FFT snapshots, and arbitrary WAV/MP3 files cannot be imported for reanalysis.
+
+## Development and validation
+
+```sh
 npm test
 npm run test:browser
+```
+
+Browser tests require locally installed Chrome and Edge. They use synthetic audio connected to the real Web Audio pipeline; the production UI has no test-source controls. Tests cover pitch detection, harmonics, silence, noise, history lookup, analysis gaps, envelopes, final PCM flushing, sample limits, file validation, navigation, playback, exports, errors, and unsaved-session replacement.
+
+Long-running tests are opt-in:
+
+```sh
 npm run test:recording-soak
+npm run test:soak
 ```
 
-- 单元测试覆盖音高、谐波、静音、噪声、历史定位、断点、波形包络、PCM 最后一段、精确采样上限及会话格式校验。
-- 浏览器测试在本机 Chrome／Edge 使用测试专用合成源，连接真实 Web Audio 链路。覆盖导航、播放、冻结、错误、断开、文件往返、PNG、未保存替换和分析调度中断；生产页面没有测试音源入口。
-- `test:recording-soak` 先构建，在生产预览上用 Chrome 真实运行至少 30 分钟；每 30 秒记录分析频率和 GC 后堆／缓冲区内存，验证自动停止、WAV、完整会话重新打开及后段播放。文件和指标保存在 `.local/recording-soak/`。
-- 原有 `test:soak` 为两个浏览器的 10 分钟分析测试。长时间测试默认跳过，只有显式命令才运行。
-- 实测结果与限制见 `VALIDATION.md`。合成音不替代真人麦克风、元音变化或实际端到端延迟验收。
+`test:recording-soak` builds the app and records in Chrome against the production preview for at least 30 real minutes. It logs analysis rate and memory every 30 seconds, then checks automatic stopping, WAV export, session reopening, and late-session playback. Artifacts go to `.local/recording-soak/`. `test:soak` runs a 10-minute analysis check in both browsers.
 
-`src/components/Timeline.tsx` 负责共用时间图和 PNG；`src/components/Charts.tsx` 保留实时频谱／毫秒波形绘制；`src/audio/history.ts` 与 `archive.ts` 负责历史和二进制文件。`src/App.tsx` 管理页面与视口，`src/style.css` 为样式。
+See [VALIDATION.md](VALIDATION.md) for recorded results and limitations. Synthetic audio tests do not establish real-microphone accuracy, vowel tracking, or end-to-end latency. Android build and device-test instructions are in [android/README.md](android/README.md).
 
-```powershell
-npm run format
-```
+| Area                                   | Files                                                         |
+| -------------------------------------- | ------------------------------------------------------------- |
+| Page state and pitch viewport          | `src/App.tsx`, `src/audio/pitch-viewport.ts`, `src/style.css` |
+| Shared time charts and PNG export      | `src/components/Timeline.tsx`                                 |
+| Live spectrum and millisecond waveform | `src/components/Charts.tsx`                                   |
+| History and binary session files       | `src/audio/history.ts`, `src/audio/archive.ts`                |
+| Piano playback                         | `src/components/Piano.tsx`, `src/audio/piano.ts`              |
 
-未加入系统音频采集、测验评分、和声识别或桌面安装包。
+Run `npm run format` to format the web source, tests, configuration, and root README.
+
+## Credits
+
+Piano samples come from [Salamander Grand Piano](https://github.com/Tonejs/audio/tree/master/salamander), a Yamaha C5 recorded by Alexander Holm and licensed under CC BY 3.0. The 30 bundled MP3 files total about 2 MB and require no external audio service at runtime. Samples load on first use and are cached; neighboring notes are shifted by at most one semitone. Playback uses one velocity layer, natural decay with a fade-out within four seconds, up to eight voices, and an eight-sample decode cache. It does not reproduce the full library's 16 velocity layers, pedals, or resonance modeling.
+
+See [sample attribution](public/piano/salamander/ATTRIBUTION.txt), [source checksums](public/piano/salamander/source.json), and [Android third-party notices](android/THIRD_PARTY_NOTICES.md) for sources and license details. The Android pitch detector is adapted from Pitchy and retains its MIT notice.

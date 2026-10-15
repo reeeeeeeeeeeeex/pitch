@@ -24,7 +24,7 @@ export const Piano = memo(function Piano({
       <button
         key={midi}
         type="button"
-        aria-label={`试听 ${noteName(midi)}`}
+        aria-label={`Play ${noteName(midi)}`}
         aria-pressed={target === midi}
         className={`piano-key ${black ? 'black' : 'white'} ${target === midi ? 'target' : ''} ${detected === midi ? 'detected' : ''}`}
         style={
@@ -52,27 +52,27 @@ export const Piano = memo(function Piano({
       <div className="section-heading">
         <div>
           <span className="eyebrow">REFERENCE</span>
-          <h2 id="piano-title">找一个音，跟着唱</h2>
+          <h2 id="piano-title">Pick a note and sing along</h2>
         </div>
         <div className="piano-legend">
           <span>
             <i className="legend-dot target-dot" />
-            目标音
+            Target note
           </span>
           <span>
             <i className="legend-dot detected-dot" />
-            当前音
+            Detected note
           </span>
           {target !== null && (
             <button className="text-button" onClick={onClear}>
               <RotateCcw size={13} />
-              清除目标
+              Clear target
             </button>
           )}
         </div>
       </div>
       <div className="piano-scroll">
-        <div className="piano-keyboard" role="group" aria-label="A0 到 C8，88 键参考钢琴">
+        <div className="piano-keyboard" role="group" aria-label="88-key reference piano, A0 to C8">
           <div className="white-keys">{WHITES.map((midi) => key(midi, false))}</div>
           {PIANO_KEYS.filter(isBlackKey).map((midi) => key(midi, true))}
         </div>
@@ -80,15 +80,15 @@ export const Piano = memo(function Piano({
       <div className="piano-footer">
         <span>
           <Headphones size={14} />
-          建议佩戴耳机，避免参考音进入麦克风
+          Use headphones to keep reference notes out of the microphone
         </span>
         <span>
-          88 键 · A0 — C8 <b>·</b> A4 = 440 Hz
+          88 keys · A0 — C8 <b>·</b> A4 = 440 Hz
         </span>
       </div>
       <div className="piano-sound">
         <span>
-          音色：
+          Sound:{' '}
           <a
             href={`${import.meta.env.BASE_URL}piano/salamander/ATTRIBUTION.txt`}
             target="_blank"
@@ -97,7 +97,7 @@ export const Piano = memo(function Piano({
             Salamander Grand Piano · Alexander Holm · CC BY 3.0
           </a>
         </span>
-        <span role="status">{loading ? '正在加载钢琴音色…' : '真实钢琴采样'}</span>
+        <span role="status">{loading ? 'Loading piano samples…' : 'Sampled grand piano'}</span>
       </div>
     </section>
   );

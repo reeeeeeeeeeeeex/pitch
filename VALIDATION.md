@@ -1,3 +1,13 @@
+# 2026-10-15: English interface and bilingual documentation
+
+- Translated built-in UI copy, accessibility labels, capture/import errors, chart labels, PNG exports, and new-session names into English. Set the document language to `en` and updated the page description and Windows launcher name.
+- Split the project guide into English `README.md` and Simplified Chinese `README.zh-CN.md`, with reciprocal language links. Verified all 24 local links across the web and Android READMEs.
+- `npm run build` and all 49 unit tests passed. Chrome/Edge browser regression: 30 passed, 6 opt-in long-running tests skipped. Artifacts: `.local/english-browser/`.
+- Visual inspection found cramped mobile input controls and analysis tabs after translation. Adjusted wrapping and corrected the waveform amplitude label position. The focused Chrome layout/pitch checks passed (2 tests); the final idle/accessibility check passed again after narrowing piano-key selectors (1 test). Screenshots: `.local/english-layout/` and `.local/english-final/`.
+- Web → Android → Web session interoperability passed with identical PCM, duration, history count, null target, and manual pitch range. Capture algorithms and file structure were not changed. No new real-microphone or long-duration acceptance run was performed.
+
+---
+
 # 2026-10-07：两八度音高视图与手动音域
 
 - 音高图从 180 px 加高为 560 px，固定 24 个半音跨度，含端点共 25 条带音名的横线。桌面使用较宽的右侧图表，窄屏将图表放在读数下方；已检查两种布局和 1600 × 1240 PNG，半音标签及色尺可读。

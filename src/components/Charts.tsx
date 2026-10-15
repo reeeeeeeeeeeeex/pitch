@@ -117,7 +117,7 @@ function timeGrid(ctx: CanvasRenderingContext2D, p: Plot) {
   for (let seconds = -10; seconds <= 0; seconds += 2) {
     const x = p.left + ((seconds + 10) / 10) * p.width;
     line(ctx, x, p.top, x, p.top + p.height);
-    ctx.fillText(seconds === 0 ? '现在' : `${seconds}s`, x, p.top + p.height + 22);
+    ctx.fillText(seconds === 0 ? 'Now' : `${seconds}s`, x, p.top + p.height + 22);
   }
 }
 
@@ -153,7 +153,7 @@ export function PitchHistory({
     ctx.textAlign = 'center';
     for (const t of [-10, -5, 0]) {
       const x = p.left + ((t + 10) / 10) * p.width;
-      ctx.fillText(t === 0 ? '现在' : `${t}s`, x, p.top + p.height + 22);
+      ctx.fillText(t === 0 ? 'Now' : `${t}s`, x, p.top + p.height + 22);
     }
     ctx.save();
     ctx.beginPath();
@@ -188,7 +188,7 @@ export function PitchHistory({
       className="pitch-history"
       ref={ref}
       role="img"
-      aria-label="最近十秒的音高曲线；无稳定音高的片段留空"
+      aria-label="Pitch trace for the last ten seconds; gaps indicate no steady pitch"
     />
   );
 }
@@ -274,7 +274,7 @@ export function AnalysisChart({
     };
     ctx.fillStyle = MUTED;
     ctx.textAlign = 'left';
-    ctx.fillText(view === 'waveform' ? '振幅' : view === 'spectrum' ? 'dB' : 'Hz', 8, 13);
+    ctx.fillText(view === 'waveform' ? 'Amplitude' : view === 'spectrum' ? 'dB' : 'Hz', 8, 13);
     if (view === 'spectrum') {
       frequencyGrid(ctx, p, false, max);
       dbGrid(ctx, p);
@@ -298,7 +298,7 @@ export function AnalysisChart({
             ctx.fillStyle = harmonic === 1 ? INK : '#829272';
             ctx.textAlign = 'center';
             if (harmonic <= 8)
-              ctx.fillText(harmonic === 1 ? '基频' : `${harmonic}×`, x, p.top + 12);
+              ctx.fillText(harmonic === 1 ? 'Fundamental' : `${harmonic}×`, x, p.top + 12);
           }
         }
         const gradient = ctx.createLinearGradient(0, p.top, 0, p.top + p.height);
@@ -418,7 +418,7 @@ export function AnalysisChart({
         const hz = frequencyAt(1 - (cursor.y - p.top) / p.height, max);
         const selected = frameAtTime(frames, time);
         const db = selected ? spectrumDbAt(selected, hz) : null;
-        text = `${(time - endTime).toFixed(2)} s · ${hz.toFixed(0)} Hz · ${db === null ? '无采样' : Number.isFinite(db) ? `${db.toFixed(1)} dB` : '−∞ dB'}`;
+        text = `${(time - endTime).toFixed(2)} s · ${hz.toFixed(0)} Hz · ${db === null ? 'No sample' : Number.isFinite(db) ? `${db.toFixed(1)} dB` : '−∞ dB'}`;
       } else if (view === 'waveform' && frame) {
         const count = Math.min(
           frame.waveform.length,
@@ -427,7 +427,7 @@ export function AnalysisChart({
         const index =
           waveformStart(frame.waveform, count) +
           Math.min(count - 1, Math.round(ratioX * (count - 1)));
-        text = `${(ratioX * milliseconds).toFixed(2)} ms · 振幅 ${frame.waveform[index].toFixed(4)}`;
+        text = `${(ratioX * milliseconds).toFixed(2)} ms · Amplitude ${frame.waveform[index].toFixed(4)}`;
       }
     }
     setTooltip((previous) => (previous === text ? previous : text));
@@ -447,17 +447,21 @@ export function AnalysisChart({
         role="img"
         aria-label={
           view === 'spectrum'
-            ? '实时频谱图，横轴频率，纵轴相对强度'
+            ? 'Live spectrum: frequency on the x-axis, relative level on the y-axis'
             : view === 'spectrogram'
-              ? '最近十秒声谱图，颜色表示频率强度'
-              : '实时声音波形，横轴毫秒，纵轴振幅'
+              ? 'Spectrogram for the last ten seconds; color shows frequency level'
+              : 'Live waveform: milliseconds on the x-axis, amplitude on the y-axis'
         }
       />
       {!frame && (
         <div className="chart-empty">
           <span className="empty-cross">＋</span>
-          <p>{running ? '正在等待音频输入' : '让你的声音出现在这里'}</p>
-          <span>{running ? '对着麦克风说话或唱一个长音' : '开启麦克风，开始实时观察'}</span>
+          <p>{running ? 'Waiting for audio' : 'See your voice here'}</p>
+          <span>
+            {running
+              ? 'Speak into the microphone or hold a note'
+              : 'Start your microphone to see your sound live'}
+          </span>
         </div>
       )}
       {tooltip && (
@@ -465,7 +469,7 @@ export function AnalysisChart({
           {tooltip}
         </div>
       )}
-      {frozen && <span className="frozen-tag">画面已冻结</span>}
+      {frozen && <span className="frozen-tag">Display frozen</span>}
     </div>
   );
 }

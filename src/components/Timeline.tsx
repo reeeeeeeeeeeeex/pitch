@@ -132,7 +132,8 @@ export function drawTimePlot(
       line(LEFT, y(value), LEFT + w, y(value));
       ctx.fillText(String(value), LEFT - 8, y(value) + 4);
     }
-    ctx.fillText('振幅', LEFT - 8, 13);
+    ctx.textAlign = 'left';
+    ctx.fillText('Amplitude', 8, 13);
     ctx.save();
     ctx.beginPath();
     ctx.rect(LEFT, TOP, w, h);
@@ -266,10 +267,10 @@ export function TimeChart({
         data-testid={`time-${kind}`}
         aria-label={
           kind === 'pitch'
-            ? `会话音高轨迹，${noteName(pitchLow)} 至 ${noteName(pitchLow + PITCH_SPAN)}，每条线一个半音`
+            ? `Session pitch trace, ${noteName(pitchLow)} to ${noteName(pitchLow + PITCH_SPAN)}, one semitone per line`
             : kind === 'spectrogram'
-              ? '会话声谱图'
-              : '连续波形概览'
+              ? 'Session spectrogram'
+              : 'Continuous waveform overview'
         }
         onKeyDown={(event) => {
           if (!onPitchPan) return;
@@ -331,7 +332,7 @@ export function TimeChart({
             ),
           );
           setHover(
-            `${formatTime(time, true)}${kind === 'pitch' ? (frame?.hz ? ` · ${noteName(Math.round(69 + 12 * Math.log2(frame.hz / 440)))} · ${frame.hz.toFixed(1)} Hz` : ' · 无稳定音高') : kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : '无分析数据'}` : ''}`,
+            `${formatTime(time, true)}${kind === 'pitch' ? (frame?.hz ? ` · ${noteName(Math.round(69 + 12 * Math.log2(frame.hz / 440)))} · ${frame.hz.toFixed(1)} Hz` : ' · No steady pitch') : kind === 'spectrogram' ? ` · ${hz.toFixed(0)} Hz · ${frame ? (-100 + (frame.spectrum[Math.min(511, Math.floor(frequencyRatio(hz) * 512))] / 255) * 85).toFixed(1) + ' dB' : 'No analysis data'}` : ''}`,
           );
         }}
       />
@@ -388,9 +389,9 @@ export function Navigator({
         />
       </div>
       <label className="nav-slider">
-        定位历史
+        Browse history
         <input
-          aria-label="定位历史"
+          aria-label="Browse history"
           type="range"
           min={0}
           max={Math.max(0, data.duration - (range.end - range.start))}
@@ -430,14 +431,14 @@ export async function saveImage(
   ctx.fillStyle = '#e2edd9';
   ctx.font = '26px sans-serif';
   ctx.fillText(
-    `声见 · ${view === 'spectrum' ? '频谱快照' : view === 'spectrogram' ? '声谱图' : '波形概览'}`,
+    `Pitch Studio · ${view === 'spectrum' ? 'Spectrum snapshot' : view === 'spectrogram' ? 'Spectrogram' : 'Waveform overview'}`,
     62,
     45,
   );
   ctx.font = '15px sans-serif';
   ctx.fillStyle = '#a3afa1';
   ctx.fillText(
-    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  48 kHz  |  音域 ${noteName(low)} — ${noteName(low + PITCH_SPAN)}`,
+    `${data.name}  |  ${formatTime(range.start, true)} — ${formatTime(range.end, true)}  |  48 kHz  |  Pitch range ${noteName(low)} — ${noteName(low + PITCH_SPAN)}`,
     62,
     78,
   );
@@ -474,12 +475,12 @@ export async function saveImage(
   }
   ctx.fillText(
     view === 'spectrum'
-      ? '横轴 Hz（对数） · 纵轴 dB · 瞬时频谱对应当前快照'
-      : '横轴为会话时间 mm:ss · 空缺表示没有分析数据',
+      ? 'X: Hz (log scale) · Y: dB · Spectrum shows the current snapshot'
+      : 'X: session time (mm:ss) · Gaps indicate missing analysis',
     670,
     1198,
   );
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('PNG 生成失败');
+  if (!blob) throw new Error('Unable to create the PNG');
   downloadBlob(blob, `${data.name}-${view}.png`);
 }

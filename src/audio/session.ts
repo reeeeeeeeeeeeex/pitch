@@ -30,15 +30,15 @@ export interface SessionSnapshot {
 export function microphoneError(error: unknown): string {
   switch (error instanceof Error || error instanceof DOMException ? error.name : '') {
     case 'NotAllowedError':
-      return '麦克风权限未开启。请在浏览器地址栏允许此网站使用麦克风，然后重试。';
+      return 'Microphone access is blocked. Allow this site to use your microphone in the browser address bar, then try again.';
     case 'NotFoundError':
-      return '没有找到麦克风。请连接输入设备后重试。';
+      return 'No microphone found. Connect an input device and try again.';
     case 'NotReadableError':
-      return '无法读取麦克风。请检查系统输入设备，或关闭独占使用麦克风的应用。';
+      return 'Unable to access the microphone. Check your system input settings or close any app using the microphone exclusively.';
     case 'OverconstrainedError':
-      return '所选麦克风不可用。请选择默认麦克风后重试。';
+      return 'The selected microphone is unavailable. Choose the default microphone and try again.';
     default:
-      return '麦克风未能启动。请用最新版 Chrome 或 Edge，通过 localhost 或 HTTPS 打开，并检查设备权限。';
+      return 'Unable to start the microphone. Open the app in a current version of Chrome or Edge over localhost or HTTPS, and check microphone permissions.';
   }
 }
 export class AudioSession {
@@ -84,13 +84,13 @@ export class AudioSession {
     this.publish({ dirty: false });
   }
   load(data: SessionData) {
-    if (this.context) throw new Error('请先停止采集');
+    if (this.context) throw new Error('Stop capture first');
     this.history.length = 0;
     if (data.latest) this.history.push(data.latest);
     this.publish({
       status: 'idle',
       error: null,
-      notice: '会话已打开，可回看与导出。',
+      notice: 'Session opened. You can now review and export it.',
       data,
       frame: null,
       settings: data.settings,
@@ -161,7 +161,7 @@ export class AudioSession {
       worklet.connect(context.destination);
       this.nodes = [source, mono, this.timeAnalyser, this.frequencyAnalyser, worklet];
       data.settings = track.getSettings();
-      this.publish({ settings: data.settings, deviceLabel: track.label || '麦克风' });
+      this.publish({ settings: data.settings, deviceLabel: track.label || 'Microphone' });
       worklet.port.onmessage = ({ data: message }) => {
         if (generation !== this.generation) return;
         if (message.type === 'started') {
@@ -183,18 +183,22 @@ export class AudioSession {
         if (message.type === 'done')
           void this.finish(
             message.samples,
-            message.reason === 'limit' ? '已达到 30 分钟，采集自动结束，完整结果已保留。' : null,
+            message.reason === 'limit'
+              ? 'The 30-minute limit has been reached. Capture stopped and the full session has been retained.'
+              : null,
           );
       };
       worklet.onprocessorerror = () => {
-        this.publish({ error: '音频采集发生错误，正在保留已录制部分。' });
+        this.publish({ error: 'Audio capture failed. Retaining the audio recorded so far.' });
         void this.stop();
       };
       track.addEventListener(
         'ended',
         () => {
           if (generation !== this.generation) return;
-          this.publish({ error: '麦克风已断开，已录制部分会保留。' });
+          this.publish({
+            error: 'Microphone disconnected. The audio recorded so far has been retained.',
+          });
           void this.stop();
         },
         { once: true },
@@ -302,7 +306,10 @@ export class AudioSession {
     if (this.context?.state === 'suspended') void this.context.resume().catch(() => undefined);
     this.worklet.port.postMessage('stop');
     this.stopTimer = setTimeout(() => {
-      this.publish({ error: '采集线程未响应，已保留已收到的录音与分析数据。' });
+      this.publish({
+        error:
+          'The capture thread stopped responding. Received audio and analysis data have been retained.',
+      });
       void this.finish(this.snapshot.data.duration * RECORD_RATE, null);
     }, 2000);
     return this.stopping;

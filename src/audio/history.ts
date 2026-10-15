@@ -175,7 +175,7 @@ export class HistoryStore {
   }
   static fromBuffer(buffer: ArrayBuffer, duration: number) {
     if (buffer.byteLength % FRAME_BYTES !== 0 || buffer.byteLength / FRAME_BYTES > 60000)
-      throw new Error('声谱历史长度不合法');
+      throw new Error('Invalid spectrogram history length');
     const store = new HistoryStore();
     store.length = buffer.byteLength / FRAME_BYTES;
     for (let offset = 0; offset < buffer.byteLength; offset += CHUNK_FRAMES * FRAME_BYTES)
@@ -198,7 +198,7 @@ export class HistoryStore {
         frame.rmsDb < -160 ||
         frame.rmsDb > 30
       )
-        throw new Error('声谱历史数据不合法');
+        throw new Error('Invalid spectrogram history data');
       previous = frame.time;
       store.indexSegment(i, frame.hz, frame.time);
     }
@@ -261,7 +261,7 @@ export class EnvelopeStore {
   }
   static fromBuffer(buffer: ArrayBuffer, duration: number) {
     if (buffer.byteLength % 16 || buffer.byteLength / 16 > 180001)
-      throw new Error('波形数据长度不合法');
+      throw new Error('Invalid waveform data length');
     const store = new EnvelopeStore(),
       view = new DataView(buffer);
     let previous = -1;
@@ -281,7 +281,7 @@ export class EnvelopeStore {
         point.min < -1 ||
         point.max > 1
       )
-        throw new Error('波形数据不合法');
+        throw new Error('Invalid waveform data');
       store.append(point);
       previous = point.time;
     }
@@ -313,7 +313,7 @@ export interface SessionData {
 export function emptySession(recorded = false): SessionData {
   const date = new Date();
   return {
-    name: `声见-${date.toISOString().replace(/[:.]/g, '-').slice(0, 19)}`,
+    name: `Pitch Studio-${date.toISOString().replace(/[:.]/g, '-').slice(0, 19)}`,
     createdAt: date.toISOString(),
     duration: 0,
     sampleRate: RECORD_RATE,

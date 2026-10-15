@@ -25,14 +25,18 @@ test('saved long session opens without a microphone in the final build', async (
     });
   });
   await page.goto('/');
-  await page.getByLabel('导入会话文件').setInputFiles('.local/recording-soak/30min.pitchsession');
-  await expect(page.getByText('会话已打开，可回看与导出。')).toBeVisible({ timeout: 30000 });
+  await page
+    .getByLabel('Import session file')
+    .setInputFiles('.local/recording-soak/30min.pitchsession');
+  await expect(page.getByText('Session opened. You can now review and export it.')).toBeVisible({
+    timeout: 30000,
+  });
   await expect(page.getByTestId('session-duration')).toHaveText('30:00.00');
-  await page.getByLabel('时间轴范围').selectOption('10');
-  await page.getByLabel('定位历史').fill('600');
-  await page.getByRole('tab', { name: '声谱图' }).click();
+  await page.getByLabel('Timeline range').selectOption('10');
+  await page.getByLabel('Browse history').fill('600');
+  await page.getByRole('tab', { name: 'Spectrogram' }).click();
   await page.getByTestId('time-spectrogram').click({ position: { x: 450, y: 110 } });
-  const audio = page.getByLabel('录音回放');
+  const audio = page.getByLabel('Recording playback');
   const seek = await audio.evaluate((element: HTMLAudioElement) => element.currentTime);
   expect(seek).toBeGreaterThan(600);
   expect(seek).toBeLessThan(610);
@@ -45,16 +49,16 @@ test('saved long session opens without a microphone in the final build', async (
     1790,
   );
   await audio.evaluate((element: HTMLAudioElement) => element.pause());
-  await page.getByLabel('时间轴范围').selectOption('0');
-  await page.getByLabel('图像范围').selectOption('whole');
+  await page.getByLabel('Timeline range').selectOption('0');
+  await page.getByLabel('Image range').selectOption('whole');
   const pngPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: '保存 PNG' }).click();
+  await page.getByRole('button', { name: 'Save PNG' }).click();
   const png = info.outputPath('final-long-overview.png');
   await (await pngPromise).saveAs(png);
   const pngBytes = await readFile(png);
   expect(pngBytes.readUInt32BE(16)).toBe(1600);
   const wavPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: '下载 WAV' }).click();
+  await page.getByRole('button', { name: 'Download WAV' }).click();
   const wav = info.outputPath('reopened.wav');
   await (await wavPromise).saveAs(wav);
   const hash = await sha256(wav);

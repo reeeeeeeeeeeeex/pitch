@@ -1,5 +1,6 @@
 {
   "name": "pitch-studio",
+  "description": "A local-first voice practice tool for the web and Android, with real-time pitch tracking, audio visualizations, recording, and an 88-key reference piano.",
   "private": true,
   "version": "1.0.0",
   "type": "module",

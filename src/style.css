@@ -99,20 +99,8 @@ select {
 .brand h1 {
   margin: 0;
   font-size: 22px;
-  letter-spacing: 3px;
+  letter-spacing: 0.2px;
   font-weight: 650;
-}
-.brand-divider {
-  height: 16px;
-  width: 1px;
-  background: #41483c;
-  margin: 0 3px;
-}
-.brand-en {
-  font-size: 10px;
-  letter-spacing: 2px;
-  font-weight: 500;
-  color: #a4ae9c;
 }
 .header-right {
   display: flex;
@@ -1189,13 +1177,6 @@ main {
   .brand h1 {
     font-size: 20px;
   }
-  .brand-en {
-    font-size: 8px;
-    letter-spacing: 1px;
-  }
-  .brand-divider {
-    margin: 0 1px;
-  }
   .brand-mark {
     width: 31px;
     height: 31px;
@@ -1218,8 +1199,8 @@ main {
   }
   .input-device {
     min-width: 0;
-    flex: 1;
-    max-width: calc(100% - 150px);
+    flex: 1 1 calc(100% - 50px);
+    max-width: none;
   }
   .input-device select {
     font-size: 11px;
@@ -1237,6 +1218,9 @@ main {
     font-size: 10px;
   }
   .mic-button {
+    flex: 1 1 0;
+    margin-left: 0;
+    white-space: nowrap;
     font-size: 11px;
     padding: 10px 11px;
     gap: 5px;
@@ -1327,11 +1311,16 @@ main {
     height: 119px;
   }
   .analysis-toolbar {
-    padding: 0 14px;
-    height: 57px;
+    padding: 0 14px 10px;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .tabs {
-    gap: 17px;
+    width: 100%;
+    height: 48px;
+    justify-content: space-between;
+    gap: 12px;
   }
   .tabs button {
     font-size: 11px;
@@ -1341,6 +1330,8 @@ main {
     width: 13px;
   }
   .freeze-button {
+    margin-left: auto;
+    white-space: nowrap;
     font-size: 10px;
     padding: 6px 8px;
     gap: 4px;

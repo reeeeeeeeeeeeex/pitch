@@ -24,12 +24,12 @@ test('pitch grid follows live notes, holds manual ranges, and preserves them in 
   });
   await page.goto('/');
   const chart = page.getByTestId('time-pitch');
-  const slider = page.getByRole('slider', { name: '音高显示音域' });
-  await expect(page.getByRole('group', { name: '音高纵轴模式' })).toHaveCount(0);
+  const slider = page.getByRole('slider', { name: 'Pitch display range' });
+  await expect(page.getByRole('group', { name: 'Pitch axis mode' })).toHaveCount(0);
   await expect(slider).toHaveValue('48');
   expect((await chart.boundingBox())!.height).toBe(560);
   expect(await page.evaluate(() => (window as any).pitchLabels)).toHaveLength(25);
-  await page.getByRole('button', { name: '开始录音' }).click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
   await expect(page.getByTestId('pitch-note')).toHaveText('A3');
   await page.evaluate(() => (window as any).testAudio.setMode('glide'));
   await expect.poll(async () => Number(await slider.inputValue())).toBeGreaterThan(48);
@@ -45,15 +45,15 @@ test('pitch grid follows live notes, holds manual ranges, and preserves them in 
   await page.evaluate(() => (window as any).testAudio.setFrequency(880));
   await expect(page.getByTestId('pitch-note')).toHaveText('A5');
   await expect.poll(async () => Number(await slider.inputValue())).toBeGreaterThan(60);
-  await page.getByRole('button', { name: '冻结画面' }).click();
+  await page.getByRole('button', { name: 'Freeze display' }).click();
   await slider.fill('36');
   await page.waitForTimeout(150);
   await expect(slider).toHaveValue('36');
-  await page.getByRole('button', { name: '恢复实时' }).click();
+  await page.getByRole('button', { name: 'Resume display' }).click();
   await expect.poll(async () => Number(await slider.inputValue())).toBeGreaterThan(60);
-  await page.getByRole('button', { name: '停止麦克风' }).click();
-  await expect(page.getByRole('button', { name: '下载 WAV' })).toBeEnabled();
-  const audio = page.getByLabel('录音回放');
+  await page.getByRole('button', { name: 'Stop microphone' }).click();
+  await expect(page.getByRole('button', { name: 'Download WAV' })).toBeEnabled();
+  const audio = page.getByLabel('Recording playback');
   await slider.fill('48');
   await audio.evaluate((e: HTMLAudioElement) => e.play());
   await page.waitForTimeout(200);
@@ -83,11 +83,13 @@ test('pitch grid follows live notes, holds manual ranges, and preserves them in 
   expect(await audio.evaluate((e: HTMLAudioElement) => e.currentTime)).toBeGreaterThan(0);
   await slider.fill('48');
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: '保存完整会话', exact: true }).click();
+  await page.getByRole('button', { name: 'Save session', exact: true }).click();
   const file = await download;
   await file.saveAs(info.outputPath('pitch-range.pitchsession'));
   await slider.fill('70');
-  await page.getByLabel('导入会话文件').setInputFiles(info.outputPath('pitch-range.pitchsession'));
+  await page
+    .getByLabel('Import session file')
+    .setInputFiles(info.outputPath('pitch-range.pitchsession'));
   await expect(slider).toHaveValue('48');
   await audio.evaluate((e: HTMLAudioElement) => e.play());
   await page.waitForTimeout(200);

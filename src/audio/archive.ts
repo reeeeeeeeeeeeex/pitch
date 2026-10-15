@@ -72,30 +72,32 @@ function fail(message: string): never {
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
-    : fail('会话清单不合法');
+    : fail('Invalid session manifest');
 }
 function number(value: unknown, low: number, high: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= low && value <= high
     ? value
-    : fail('会话数值或时间范围不合法');
+    : fail('Invalid session value or time range');
 }
 export async function decodeSession(
   file: Blob,
 ): Promise<{ data: SessionData; display: SavedDisplay }> {
-  if (file.size < 12 || file.size > MAX_FILE) fail('会话文件应小于 256 MiB，且包含有效文件头');
+  if (file.size < 12 || file.size > MAX_FILE)
+    fail('Session files must have a valid header and be no larger than 256 MiB');
   const header = await file.slice(0, 12).arrayBuffer();
-  if (new TextDecoder().decode(header.slice(0, 8)) !== MAGIC) fail('不是支持的 .pitchsession 文件');
+  if (new TextDecoder().decode(header.slice(0, 8)) !== MAGIC)
+    fail('Not a supported .pitchsession file');
   const manifestLength = new DataView(header).getUint32(8, true);
   if (!manifestLength || manifestLength > 65536 || manifestLength + 12 > file.size)
-    fail('会话清单长度不合法');
+    fail('Invalid session manifest length');
   let parsed: unknown;
   try {
     parsed = JSON.parse(await file.slice(12, 12 + manifestLength).text());
   } catch {
-    fail('会话清单已损坏');
+    fail('The session manifest is corrupted');
   }
   const m = object(parsed);
-  if (m.version !== 1) fail('不支持此会话版本');
+  if (m.version !== 1) fail('Unsupported session version');
   const duration = number(m.duration, 1 / RECORD_RATE, MAX_SECONDS);
   if (
     m.sampleRate !== RECORD_RATE ||
@@ -105,13 +107,13 @@ export async function decodeSession(
     typeof m.createdAt !== 'string' ||
     !Number.isFinite(Date.parse(m.createdAt))
   )
-    fail('会话信息不合法');
+    fail('Invalid session metadata');
   if (
     !Array.isArray(m.lengths) ||
     m.lengths.length !== 4 ||
     m.lengths.some((value) => !Number.isSafeInteger(value) || value < 0)
   )
-    fail('会话数据块长度不合法');
+    fail('Invalid session block length');
   const lengths = m.lengths as number[];
   if (
     lengths.reduce((a, b) => a + b, 12 + manifestLength) !== file.size ||
@@ -119,7 +121,7 @@ export async function decodeSession(
     lengths[1] > 180001 * 16 ||
     ![0, (PITCH_SIZE + FFT_SIZE / 2) * 4].includes(lengths[3])
   )
-    fail('会话数据块长度不匹配');
+    fail('Session block lengths do not match');
   let offset = 12 + manifestLength;
   const blocks = lengths.map((length) => {
     const block = file.slice(offset, offset + length);
@@ -128,7 +130,7 @@ export async function decodeSession(
   });
   let wav: Blob | null = null;
   if (m.recorded) {
-    if (blocks[2].size < 46) fail('录音数据缺失');
+    if (blocks[2].size < 46) fail('Recording data is missing');
     const buffer = await blocks[2].slice(0, 44).arrayBuffer(),
       w = new DataView(buffer);
     const text = (start: number, end: number) => new TextDecoder().decode(buffer.slice(start, end));
@@ -149,9 +151,9 @@ export async function decodeSession(
       (blocks[2].size - 44) % 2 ||
       Math.abs((blocks[2].size - 44) / 2 / RECORD_RATE - duration) > 1 / RECORD_RATE
     )
-      fail('WAV 格式或录音时长不匹配');
+      fail('WAV format or recording duration does not match');
     wav = blocks[2].slice(0, blocks[2].size, 'audio/wav');
-  } else if (blocks[2].size) fail('仅分析会话不应包含录音');
+  } else if (blocks[2].size) fail('An analysis-only session cannot contain a recording');
   const history = HistoryStore.fromBuffer(await blocks[0].arrayBuffer(), duration);
   const envelopes = EnvelopeStore.fromBuffer(await blocks[1].arrayBuffer(), duration);
   let latest: SessionData['latest'] = null;
@@ -169,7 +171,7 @@ export async function decodeSession(
       waveform.some((v) => !Number.isFinite(v) || Math.abs(v) > 16) ||
       spectrum.some((v) => v !== -Infinity && (!Number.isFinite(v) || v < -1000 || v > 100))
     )
-      fail('实时快照数据不合法');
+      fail('Invalid snapshot data');
     latest = {
       time,
       sampleRate: RECORD_RATE,
@@ -179,7 +181,7 @@ export async function decodeSession(
       rmsDb,
       peak,
     };
-  } else if (m.latest !== null) fail('实时快照缺失');
+  } else if (m.latest !== null) fail('Snapshot data is missing');
   const d = object(m.display);
   const display: SavedDisplay = {
     view: ['spectrum', 'spectrogram', 'waveform'].includes(String(d.view))
@@ -200,9 +202,9 @@ export async function decodeSession(
         ? true
         : typeof d.pitchFollowing === 'boolean'
           ? d.pitchFollowing
-          : fail('音高跟随设置不合法'),
+          : fail('Invalid pitch-follow setting'),
   };
-  if (!Number.isInteger(display.pitchLow)) fail('音高显示范围不合法');
+  if (!Number.isInteger(display.pitchLow)) fail('Invalid pitch display range');
   let settings: MediaTrackSettings | null = null;
   if (m.settings) {
     const s = object(m.settings);

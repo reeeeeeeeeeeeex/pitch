@@ -35,9 +35,9 @@ test('88 keys play recorded samples at both ends and transpose neighboring notes
   await page.goto('/');
   expect(requests).toHaveLength(0);
   for (const [i, note] of ['A0', 'A♯0', 'C4', 'C8'].entries()) {
-    await page.getByRole('button', { name: `试听 ${note}`, exact: true }).click();
+    await page.getByRole('button', { name: `Play ${note}`, exact: true }).click();
     await expect.poll(() => page.evaluate(() => (window as any).pianoStarts.length)).toBe(i + 1);
-    await expect(page.getByRole('button', { name: `试听 ${note}`, exact: true })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: `Play ${note}`, exact: true })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -50,7 +50,7 @@ test('88 keys play recorded samples at both ends and transpose neighboring notes
   const starts = await page.evaluate(() => (window as any).pianoStarts);
   expect(starts[1].rate).toBeCloseTo(2 ** (1 / 12));
   expect(starts.every((s: any) => s.duration > 0.2 && s.audible)).toBe(true);
-  await expect(page.locator('.piano-sound [role=status]')).toHaveText('真实钢琴采样');
+  await expect(page.locator('.piano-sound [role=status]')).toHaveText('Sampled grand piano');
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -68,16 +68,16 @@ test('stale downloads do not play an old key, and failed samples can be retried'
   });
   await page.route('**/piano/salamander/C4.mp3', (route) => route.fulfill({ status: 503 }));
   await page.goto('/');
-  await page.getByRole('button', { name: '试听 A0', exact: true }).click();
-  await expect(page.locator('.piano-sound [role=status]')).toHaveText('正在加载钢琴音色…');
-  await page.getByRole('button', { name: '试听 C8', exact: true }).click();
+  await page.getByRole('button', { name: 'Play A0', exact: true }).click();
+  await expect(page.locator('.piano-sound [role=status]')).toHaveText('Loading piano samples…');
+  await page.getByRole('button', { name: 'Play C8', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).pianoStarts.length)).toBe(1);
   release();
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.getByRole('button', { name: '试听 C4', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('钢琴音色加载或播放失败');
+  await page.getByRole('button', { name: 'Play C4', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Unable to load or play the piano sound');
   await page.unroute('**/piano/salamander/C4.mp3');
-  await page.getByRole('button', { name: '试听 C4', exact: true }).click();
+  await page.getByRole('button', { name: 'Play C4', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).pianoStarts.length)).toBe(2);
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
