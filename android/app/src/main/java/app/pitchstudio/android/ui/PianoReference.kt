@@ -1,5 +1,8 @@
 package app.pitchstudio.android.ui
 
+import app.pitchstudio.android.R
+import app.pitchstudio.android.LocalAppStrings
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,11 +23,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun PianoReference(state: StudioState, play: (Int) -> Unit, clear: () -> Unit) {
+    val strings = LocalAppStrings.current
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(top = 12.dp).background(Color(0xff192019), RoundedCornerShape(12.dp))
         .clickable { open = true }.heightIn(min = 52.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Default.Piano, null, Modifier.size(21.dp), tint = Secondary)
-        Spacer(Modifier.width(10.dp)); Text("Reference piano", fontSize = 14.sp); Spacer(Modifier.weight(1f))
+        Spacer(Modifier.width(10.dp)); Text(strings.get(R.string.reference_piano), fontSize = 14.sp); Spacer(Modifier.weight(1f))
         state.display.target?.let { Text(noteName(it), color = Color(0xffb9a3e3), fontSize = 13.sp) }
         Icon(Icons.Default.ChevronRight, null, tint = Secondary)
     }
@@ -39,8 +43,8 @@ import kotlinx.coroutines.launch
     ModalBottomSheet(onDismissRequest = { open = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.padding(bottom = 24.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Reference piano", fontSize = 20.sp); Spacer(Modifier.weight(1f))
-                if (state.display.target != null) TextButton(onClick = clear) { Text("Clear target") }
+                Text(strings.get(R.string.reference_piano), fontSize = 20.sp); Spacer(Modifier.weight(1f))
+                if (state.display.target != null) TextButton(onClick = clear) { Text(strings.get(R.string.clear_target)) }
             }
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
                 listOf(21, 24, 36, 48, 60, 72, 84, 96, 108).forEach { note ->
@@ -53,7 +57,7 @@ import kotlinx.coroutines.launch
                         val color = if (state.display.target == note) Color(0xffb9a3e3) else if (state.frame?.pitch?.note == note) Accent else Color(0xffe0e5d6)
                         Box(Modifier.offset(x = (index * 64).dp).width(62.dp).height(184.dp)
                             .background(color, RoundedCornerShape(bottomStart = 5.dp, bottomEnd = 5.dp))
-                            .semantics { contentDescription = "Play ${noteName(note)}"; role = Role.Button }
+                            .semantics { contentDescription = strings.get(R.string.play, noteName(note)); role = Role.Button }
                             .clickable { play(note) }, contentAlignment = Alignment.BottomCenter) {
                             Text(noteName(note), color = Back, fontSize = 11.sp, modifier = Modifier.padding(bottom = 12.dp))
                         }
@@ -64,12 +68,12 @@ import kotlinx.coroutines.launch
                         Box(Modifier.offset(x = (before * 64 - 24).dp).width(48.dp).height(114.dp)
                             .background(color, RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
                             .border(1.dp, Back, RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
-                            .semantics { contentDescription = "Play ${noteName(note)}"; role = Role.Button }
+                            .semantics { contentDescription = strings.get(R.string.play, noteName(note)); role = Role.Button }
                             .clickable { play(note) })
                     }
                 }
             }
-            Text("A0–C8 · 88 keys · Headphones recommended", color = Secondary, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp))
+            Text(strings.get(R.string.a0_c8_88_keys_headphones_recommended), color = Secondary, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp))
         }
     }
 }

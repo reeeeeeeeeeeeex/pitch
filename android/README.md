@@ -4,7 +4,7 @@
 
 An offline voice practice app built with Kotlin and Jetpack Compose. Track your pitch, explore your voice in four analysis views, record a practice session, and sing along with an 88-key piano—all on your device.
 
-Requires Android 10 (API 29) or later; compile/target SDK is 36. The app bundles samples from `public/piano/salamander/` and runs independently of the web app. Both platforms can open the same `.pitchsession` files. The interface is in English.
+Requires Android 10 (API 29) or later; compile/target SDK is 36. The app bundles samples from `public/piano/salamander/` and runs independently of the web app. Both platforms can open the same `.pitchsession` files. The interface supports English and Simplified Chinese.
 
 The [main screen](docs/screenshots/main.png), [piano](docs/screenshots/piano.png), and [spectrogram export](docs/screenshots/export-spectrogram.png) show the English interface with synthetic test data.
 
@@ -12,6 +12,7 @@ The [main screen](docs/screenshots/main.png), [piano](docs/screenshots/piano.png
 
 Build the debug APK with `:app:assembleDebug`; the output is `app/build/outputs/apk/debug/app-debug.apk`. Copy it to your phone and open it with a file manager. If prompted, allow that file manager to install the APK. This is a development-signed build, with no account, network service, or app-store publishing configuration.
 
+- Tap the language icon in the top toolbar to choose **English** or **简体中文**. English is the default, and the app remembers your choice. Switching updates the UI and subsequent PNG exports without interrupting capture or resetting the session, playback position, or display settings. Both languages are bundled for offline use.
 - **Analyze only** captures analysis without keeping playable audio. **Start recording** also saves 48 kHz mono 16-bit PCM. Sessions stop automatically after 30 minutes.
 - Capture runs only in the foreground. Locking the screen, going home, or switching apps ends capture and saves the results. Start a new capture when you return. Rotation does not stop capture. The screen stays awake during capture, but manually locking it still stops the session.
 - **Pitch**, **Spectrogram**, **Waveform**, and **Spectrum** share the same time range where applicable. Drag horizontally to browse history and vertically to scroll the page. The pitch chart's side control adjusts its two-octave range. A steady live pitch resumes automatic range following; a frozen display or playback preserves a manual range.
@@ -75,7 +76,7 @@ cd android
 # Replace SERIAL with a test device listed by adb devices.
 adb -s SERIAL install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s SERIAL install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.StudioTest,app.pitchstudio.android.PianoTest,app.pitchstudio.android.LayoutTest,app.pitchstudio.android.LifecycleTest,app.pitchstudio.android.DocumentPickerTest app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner
+adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.StudioTest,app.pitchstudio.android.PianoTest,app.pitchstudio.android.LayoutTest,app.pitchstudio.android.LifecycleTest,app.pitchstudio.android.DocumentPickerTest,app.pitchstudio.android.LanguageTest app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner
 
 # Opt-in: this takes 30 real minutes, without accelerating the sample clock.
 adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.RecordingSoakTest -e soak true app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner

@@ -4,7 +4,7 @@
 
 独立、离线的人声练习 App，使用 Kotlin / Jetpack Compose 构建。实时查看音高、切换四类声音图表、录制练习片段，也可以跟随 88 键参考钢琴练习，全程在设备上处理。
 
-支持 Android 10（API 29）及以上，compile/target SDK 36。Android 构建从仓库现有 `public/piano/salamander/` 打包采样，不需要启动网页服务，与网页版互通 `.pitchsession` 文件。界面使用英文；下文在首次介绍主要操作时注明对应的英文按钮。
+支持 Android 10（API 29）及以上，compile/target SDK 36。Android 构建从仓库现有 `public/piano/salamander/` 打包采样，不需要启动网页服务，与网页版互通 `.pitchsession` 文件。界面支持中英双语；下文在首次介绍主要操作时注明对应的英文按钮。
 
 英文界面的运行截图使用合成测试数据：[主屏](docs/screenshots/main.png)、[钢琴](docs/screenshots/piano.png)、[声谱 PNG](docs/screenshots/export-spectrogram.png)。
 
@@ -12,6 +12,7 @@
 
 测试包由 `:app:assembleDebug` 生成，位于 `app/build/outputs/apk/debug/app-debug.apk`。将 APK 传到手机，用文件管理器打开安装；如果系统询问，请为正在使用的文件管理器允许安装此 APK。它是开发签名的测试版本，不包含账号、网络服务或应用商店发布配置。
 
+- 点击顶部语言图标，在 **English / 简体中文** 之间切换。默认英文，选择会在下次启动时保留；界面和之后导出的 PNG 使用所选语言。切换不会中断采集，也不会重置会话、播放位置或显示设置。两种语言均随安装包提供，离线可用。
 - 点击「仅分析（Analyze only）」只保留分析数据；「开始录音（Start recording）」同时保存 48 kHz、单声道、16 位 PCM。每次最长 30 分钟，到时自动结束。
 - 采集只在前台运行。锁屏、返回桌面或切换到其他 App 会结束并保存结果；返回后需主动开始。旋转屏幕不结束采集。采集中保持屏幕常亮，手动锁屏仍会停止。
 - 四个页签共用时间范围。图表上左右拖动回看历史，上下拖动滚动页面；音高图右侧滑条调整两八度音域。实时有稳定音高时自动恢复跟随，冻结或回放时保留手动音域。
@@ -77,7 +78,7 @@ cd android
 # 将 SERIAL 换成 adb devices 中的目标设备；只操作测试设备。
 adb -s SERIAL install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s SERIAL install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.StudioTest,app.pitchstudio.android.PianoTest,app.pitchstudio.android.LayoutTest,app.pitchstudio.android.LifecycleTest,app.pitchstudio.android.DocumentPickerTest app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner
+adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.StudioTest,app.pitchstudio.android.PianoTest,app.pitchstudio.android.LayoutTest,app.pitchstudio.android.LifecycleTest,app.pitchstudio.android.DocumentPickerTest,app.pitchstudio.android.LanguageTest app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner
 
 # 明确 opt-in：真实经过 30 分钟，不快进样本时钟。
 adb -s SERIAL shell am instrument -w -e class app.pitchstudio.android.RecordingSoakTest -e soak true app.pitchstudio.android.test/androidx.test.runner.AndroidJUnitRunner

@@ -3,6 +3,7 @@ package app.pitchstudio.android
 import android.app.Application
 import android.media.AudioManager
 import android.net.Uri
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.pitchstudio.android.audio.AudioEngine
@@ -28,6 +29,13 @@ data class StudioState(
 )
 
 class StudioViewModel(application: Application) : AndroidViewModel(application) {
+    private val preferences = application.getSharedPreferences("preferences", Application.MODE_PRIVATE)
+    private val selectedLanguage = MutableStateFlow(Language.fromCode(preferences.getString("language", null)))
+    val language = selectedLanguage.asStateFlow()
+    fun selectLanguage(value: Language) {
+        preferences.edit { putString("language", value.code) }
+        selectedLanguage.value = value
+    }
     val repository = SessionRepository(File(application.filesDir, "sessions"))
     val engine = AudioEngine(application, repository)
     val piano = PianoEngine(application)
@@ -223,7 +231,8 @@ class StudioViewModel(application: Application) : AndroidViewModel(application) 
         val session = current ?: error("No session to export")
         val s = state.value
         val range = if (whole) TimeRange(0.0, max(1.0, session.meta.duration)) else s.range
-        app.pitchstudio.android.ui.ChartRenderer.export(getApplication<Application>(), uri, session, s, range)
+        app.pitchstudio.android.ui.ChartRenderer.export(getApplication<Application>(), uri, session, s, range,
+            AppStrings(getApplication(), language.value))
         message("Image saved")
     }
     fun rename(id: String, name: String) = work("Rename") {

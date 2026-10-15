@@ -1,5 +1,14 @@
 # Android 验证记录
 
+## 2026-10-15: English / Simplified Chinese language switching
+
+- Added a toolbar language menu with English and 简体中文. The app defaults to English and saves the selection in local preferences. App-owned UI, accessibility labels, input settings, diagnostics, and PNG captions use the selected language; saved session and device names remain unchanged.
+- Switching updates Compose resources without recreating the Activity. The new tests verify the same Activity and session during capture, continued sample collection, frozen state, pitch range, target, selected chart, playback cursor, translated errors, and preferences after Activity recreation.
+- Debug APK, test APK, and lint passed; lint remains at 0 errors and 5 existing warnings. Both languages are included in app bundles for offline switching.
+- API 35 emulator: all 10 short regression tests passed (52.879 seconds), including the two language cases. After completing the input-settings labels, the final language-only run passed both cases (9.454 seconds). The settings-sheet test now dismisses the dialog with a device back key; invoking the Activity back dispatcher directly had closed the Activity instead. Logs: `.local/language-android-tests.txt` and `.local/language-android-final.txt`.
+- A separate UI check selected Chinese, force-stopped the test app, and cold-started it. The screen still showed 开始录音 / 仅分析 / 声谱图, with `zh-CN` persisted on disk. Evidence: `.local/language-restart.xml`. Visually checked the Chinese screen and exported PNG in `.local/android-language-validation/`.
+- Audio tests used synthetic input on an emulator without audio output. No new physical-device listening or 30-minute soak run was performed.
+
 ## 2026-10-15: English interface and bilingual documentation
 
 - Translated app labels, accessibility descriptions, errors, recovery messages, chart exports, and the launcher name into English. Made the analysis tabs horizontally scrollable so English labels remain readable at narrow widths and larger font sizes.

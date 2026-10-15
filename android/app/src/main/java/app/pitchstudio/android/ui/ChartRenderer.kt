@@ -1,5 +1,8 @@
 package app.pitchstudio.android.ui
 
+import app.pitchstudio.android.R
+import app.pitchstudio.android.AppStrings
+
 import android.content.Context
 import android.graphics.*
 import android.net.Uri
@@ -149,7 +152,7 @@ object ChartRenderer {
         p.color = accent; p.style = Paint.Style.STROKE; p.strokeWidth = 2f; canvas.drawPath(path, p); canvas.restore()
         p.style = Paint.Style.FILL; p.color = muted; p.textSize = textSize; canvas.drawText("${state.display.milliseconds} ms · ×${state.display.gain}", 4f, height - 4f, p)
     }
-    fun export(context: Context, uri: Uri, session: SessionHandle, state: StudioState, range: TimeRange) {
+    fun export(context: Context, uri: Uri, session: SessionHandle, state: StudioState, range: TimeRange, strings: AppStrings) {
         val snapshot = state.copy(range = range, frames = session.frames(range, 1500), envelope = session.envelopeIndex.visible(range, 1500), cursor = null)
         val analysis = if (state.view == View.PITCH) View.entries.first { it.name.lowercase() == state.display.view } else state.view
         val bitmap = Bitmap.createBitmap(1600, 1240, Bitmap.Config.ARGB_8888)
@@ -157,14 +160,14 @@ object ChartRenderer {
             val canvas = Canvas(bitmap); canvas.drawColor(background)
             val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(230, 235, 223); textSize = 24f }
             canvas.drawText("${session.meta.name.take(60)} · ${formatTime(range.start)} — ${formatTime(range.end)}", 54f, 38f, p)
-            p.color = muted; p.textSize = 18f; canvas.drawText("48 kHz · ${noteName(state.display.pitchLow)} — ${noteName(state.display.pitchLow + 24)} · Pitch / ${analysis.name.lowercase()}", 54f, 72f, p)
+            p.color = muted; p.textSize = 18f; canvas.drawText(strings.get(R.string.message_48_khz_pitch, noteName(state.display.pitchLow), noteName(state.display.pitchLow + 24), strings.viewName(analysis)), 54f, 72f, p)
             canvas.save(); canvas.translate(0f, 90f); draw(canvas, 1600f, 560f, View.PITCH, snapshot, 18f); canvas.restore()
             canvas.save(); canvas.translate(0f, 700f); draw(canvas, 1600f, 460f, analysis, snapshot, 18f); canvas.restore()
             if (analysis == View.SPECTROGRAM) colorScale(canvas, 60f, 1170f, 500f, 18f)
             val units = when (analysis) {
-                View.SPECTRUM -> "Spectrum snapshot · X: Hz · Y: dB"
-                View.SPECTROGRAM -> "X: mm:ss · Y: Hz · Gaps indicate missing analysis"
-                else -> "X: mm:ss · Y: amplitude (−1 to 1)"
+                View.SPECTRUM -> strings.get(R.string.spectrum_snapshot_x_hz_y_db)
+                View.SPECTROGRAM -> strings.get(R.string.x_mm_ss_y_hz_gaps_indicate_missing_analysis)
+                else -> strings.get(R.string.x_mm_ss_y_amplitude_1_to_1)
             }
             canvas.drawText(units, 690f, 1205f, p)
             context.contentResolver.openOutputStream(uri, "wt")!!.use { require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)); it.flush() }

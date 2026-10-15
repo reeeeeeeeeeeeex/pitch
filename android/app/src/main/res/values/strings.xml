@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="interrupted" formatted="false">\u0020· Interrupted</string>
+    <string name="message_0f_cents" formatted="false">%+.0f cents</string>
+    <string name="message_1_min" formatted="false">1 min</string>
+    <string name="message_48_khz_pitch" formatted="false">48 kHz · %1$s — %2$s · Pitch / %3$s</string>
+    <string name="message_5_min" formatted="false">5 min</string>
+    <string name="a0_c8_88_keys_headphones_recommended" formatted="false">A0–C8 · 88 keys · Headphones recommended</string>
+    <string name="all" formatted="false">All</string>
+    <string name="amplitude_3f_3f" formatted="false">Amplitude %.3f — %.3f</string>
+    <string name="analysis_failed" formatted="false">Analysis failed: %1$s</string>
+    <string name="analyze_only" formatted="false">Analyze only</string>
+    <string name="analyzing" formatted="false">Analyzing</string>
+    <string name="audio_is_processed_on_your_device_locking_the_screen_or_switching_apps" formatted="false">Audio is processed on your device. Locking the screen or switching apps ends capture and saves your results. Sessions can last up to 30 minutes.</string>
+    <string name="cancel" formatted="false">Cancel</string>
+    <string name="capture_ended" formatted="false">Capture ended: %1$s</string>
+    <string name="capture_stopped_because_the_app_closed" formatted="false">Capture stopped because the app closed.</string>
+    <string name="capture_stopped_because_the_app_left_the_foreground" formatted="false">Capture stopped because the app left the foreground.</string>
+    <string name="clear_target" formatted="false">Clear target</string>
+    <string name="delete" formatted="false">Delete</string>
+    <string name="delete_session" formatted="false">Delete session</string>
+    <string name="delete_this_session" formatted="false">Delete this session?</string>
+    <string name="dismiss_message" formatted="false">Dismiss message</string>
+    <string name="expected_a_48_khz_mono_pcm_wav_file" formatted="false">Expected a 48 kHz mono PCM WAV file</string>
+    <string name="export" formatted="false">Export</string>
+    <string name="export_complete" formatted="false">Export complete</string>
+    <string name="freeze_display" formatted="false">Freeze display</string>
+    <string name="full_session_waveform_navigator" formatted="false">Full-session waveform navigator</string>
+    <string name="go_live" formatted="false">Go live</string>
+    <string name="hide_waveform_detail" formatted="false">Hide waveform detail</string>
+    <string name="image_saved" formatted="false">Image saved</string>
+    <string name="action_import" formatted="false">Import</string>
+    <string name="import_session" formatted="false">Import session</string>
+    <string name="include_the_full_session_in_the_image" formatted="false">Include the full session in the image</string>
+    <string name="input_settings" formatted="false">Input settings</string>
+    <string name="insufficient" formatted="false">Insufficient</string>
+    <string name="insufficient_storage_space" formatted="false">Insufficient storage space</string>
+    <string name="invalid_numeric_value_in_session" formatted="false">Invalid numeric value in session</string>
+    <string name="invalid_playback_data" formatted="false">Invalid playback data</string>
+    <string name="invalid_session_manifest" formatted="false">Invalid session manifest</string>
+    <string name="invalid_session_manifest_length" formatted="false">Invalid session manifest length</string>
+    <string name="language" formatted="false">Language</string>
+    <string name="live_last_snapshot" formatted="false">Live / last snapshot</string>
+    <string name="microphone_permission_was_denied_allow_access_in_system_settings_then_" formatted="false">Microphone permission was denied. Allow access in system settings, then try again.</string>
+    <string name="microphone_read_failed" formatted="false">Microphone read failed (%1$s)</string>
+    <string name="more" formatted="false">More</string>
+    <string name="no_data" formatted="false">No data</string>
+    <string name="no_saved_sessions_yet" formatted="false">No saved sessions yet</string>
+    <string name="no_session_to_export" formatted="false">No session to export</string>
+    <string name="no_steady_pitch" formatted="false">No steady pitch</string>
+    <string name="no_steady_pitch_detected" formatted="false">No steady pitch detected</string>
+    <string name="not_a_supported_pitchsession_file" formatted="false">Not a supported .pitchsession file</string>
+    <string name="pause_playback" formatted="false">Pause playback</string>
+    <string name="piano_audio_output_is_unavailable" formatted="false">Piano audio output is unavailable</string>
+    <string name="piano_salamander_grand_piano_alexander_holm_cc_by_3_0_pitch_detection_" formatted="false">Piano: Salamander Grand Piano / Alexander Holm / CC BY 3.0\nPitch detection: Pitchy / Ian Johnson / MIT</string>
+    <string name="pitch" formatted="false">Pitch</string>
+    <string name="pitch_chart_to_25_semitone_lines" formatted="false">Pitch chart, %1$s to %2$s, 25 semitone lines</string>
+    <string name="pitch_display_range" formatted="false">Pitch display range</string>
+    <string name="play_recording" formatted="false">Play recording</string>
+    <string name="play" formatted="false">Play %1$s</string>
+    <string name="playback_failed_please_try_again" formatted="false">Playback failed. Please try again.</string>
+    <string name="playback_failed" formatted="false">Playback failed: %1$s</string>
+    <string name="playback_is_closed" formatted="false">Playback is closed</string>
+    <string name="playback_position" formatted="false">Playback position</string>
+    <string name="quiet_recordings_are_boosted_during_playback_by_up_to_about_24_db_save" formatted="false">Quiet recordings are boosted during playback by up to about 24 dB. Saved recordings, exported WAV files, and analysis keep their original levels.</string>
+    <string name="ready" formatted="false">Ready</string>
+    <string name="recording" formatted="false">Recording</string>
+    <string name="reference_piano" formatted="false">Reference piano</string>
+    <string name="rename" formatted="false">Rename</string>
+    <string name="resume_display" formatted="false">Resume display</string>
+    <string name="sample_decoding_timed_out_or_returned_no_audio" formatted="false">Sample decoding timed out or returned no audio</string>
+    <string name="save" formatted="false">Save</string>
+    <string name="save_png_image" formatted="false">Save PNG image</string>
+    <string name="save_wav_recording" formatted="false">Save WAV recording</string>
+    <string name="save_image" formatted="false">Save image</string>
+    <string name="save_session_pitchsession" formatted="false">Save session .pitchsession</string>
+    <string name="saved" formatted="false">Saved</string>
+    <string name="saved_sessions" formatted="false">Saved sessions</string>
+    <string name="saving_failed_restart_the_app_to_recover_the_last_checkpoint" formatted="false">Saving failed: %1$s. Restart the app to recover the last checkpoint.</string>
+    <string name="saving_interrupted" formatted="false">Saving interrupted: %1$s</string>
+    <string name="saving" formatted="false">Saving…</string>
+    <string name="session_block_lengths_do_not_match" formatted="false">Session block lengths do not match</string>
+    <string name="session_import_failed" formatted="false">Session import failed: %1$s</string>
+    <string name="session_value_is_out_of_range" formatted="false">Session value is out of range</string>
+    <string name="spectrogram" formatted="false">Spectrogram</string>
+    <string name="spectrum" formatted="false">Spectrum</string>
+    <string name="spectrum_snapshot_x_hz_y_db" formatted="false">Spectrum snapshot · X: Hz · Y: dB</string>
+    <string name="start_recording" formatted="false">Start recording</string>
+    <string name="stop_analysis" formatted="false">Stop analysis</string>
+    <string name="stop_capture_first" formatted="false">Stop capture first</string>
+    <string name="stop_recording" formatted="false">Stop recording</string>
+    <string name="storage_is_too_slow_audio_written_so_far_has_been_retained" formatted="false">Storage is too slow. Audio written so far has been retained.</string>
+    <string name="system_default_microphone" formatted="false">System default microphone</string>
+    <string name="the_30_minute_limit_has_been_reached" formatted="false">The 30-minute limit has been reached</string>
+    <string name="the_app_left_the_foreground_your_recording_and_analysis_have_been_save" formatted="false">The app left the foreground. Your recording and analysis have been saved.</string>
+    <string name="the_input_device_changed_please_start_capture_again" formatted="false">The input device changed. Please start capture again.</string>
+    <string name="the_microphone_could_not_start_capture" formatted="false">The microphone could not start capture</string>
+    <string name="the_microphone_is_in_use_by_the_system_or_another_app" formatted="false">The microphone is in use by the system or another app</string>
+    <string name="the_previous_capture_was_interrupted_saved_data_has_been_recovered" formatted="false">The previous capture was interrupted. Saved data has been recovered.</string>
+    <string name="the_selected_microphone_disconnected_choose_another_input" formatted="false">The selected microphone disconnected. Choose another input.</string>
+    <string name="the_session_exceeds_256_mib" formatted="false">The session exceeds 256 MiB</string>
+    <string name="this_device_cannot_provide_48_khz_mono_pcm_input" formatted="false">This device cannot provide 48 kHz mono PCM input</string>
+    <string name="unable_to_load_chart_data" formatted="false">Unable to load chart data: %1$s</string>
+    <string name="unable_to_load_piano_samples" formatted="false">Unable to load piano samples: %1$s</string>
+    <string name="unable_to_open_session" formatted="false">Unable to open session: %1$s</string>
+    <string name="unable_to_play_piano_audio" formatted="false">Unable to play piano audio: %1$s</string>
+    <string name="unable_to_save_display_settings" formatted="false">Unable to save display settings: %1$s</string>
+    <string name="unable_to_select_this_microphone" formatted="false">Unable to select this microphone</string>
+    <string name="unable_to_start_capture" formatted="false">Unable to start capture</string>
+    <string name="unknown" formatted="false">Unknown</string>
+    <string name="unsupported_session_version" formatted="false">Unsupported session version</string>
+    <string name="wav_duration_or_length_does_not_match" formatted="false">WAV duration or length does not match</string>
+    <string name="waiting_for_audio" formatted="false">Waiting for audio</string>
+    <string name="waveform" formatted="false">Waveform</string>
+    <string name="waveform_detail_ms" formatted="false">Waveform detail · ms</string>
+    <string name="x_mm_ss_y_hz_gaps_indicate_missing_analysis" formatted="false">X: mm:ss · Y: Hz · Gaps indicate missing analysis</string>
+    <string name="x_mm_ss_y_amplitude_1_to_1" formatted="false">X: mm:ss · Y: amplitude (−1 to 1)</string>
+    <string name="failed" formatted="false">failed</string>
+    <string name="this_removes_the_recording_and_analysis_from_the_app_exported_files_ar" formatted="false">%1$s\nThis removes the recording and analysis from the app. Exported files are kept.</string>
+    <string name="chart" formatted="false">%1$s chart</string>
+    <string name="failed_1249fa" formatted="false">%1$s failed: %2$s</string>
+    <string name="sec" formatted="false">%1$s sec</string>
+    <string name="hz_echo_cancellation_noise_suppression_automatic_gain_control" formatted="false">%1$s · %2$s Hz\nEcho cancellation: %3$s\nNoise suppression: %4$s\nAutomatic gain control: %5$s</string>
+    <string name="system_default_microphone_d1823d" formatted="false">✓ System default microphone</string>
+</resources>

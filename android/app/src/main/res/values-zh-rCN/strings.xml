@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="on">已开启</string>
+    <string name="off">已关闭</string>
+    <string name="interrupted" formatted="false">\u0020· 已中断</string>
+    <string name="message_0f_cents" formatted="false">%+.0f 音分</string>
+    <string name="message_1_min" formatted="false">1 分钟</string>
+    <string name="message_48_khz_pitch" formatted="false">48 kHz · %1$s — %2$s · 音高 / %3$s</string>
+    <string name="message_5_min" formatted="false">5 分钟</string>
+    <string name="a0_c8_88_keys_headphones_recommended" formatted="false">A0–C8 · 88 键 · 建议戴耳机试听</string>
+    <string name="all" formatted="false">整段</string>
+    <string name="amplitude_3f_3f" formatted="false">振幅 %.3f — %.3f</string>
+    <string name="analysis_failed" formatted="false">分析失败：%1$s</string>
+    <string name="analyze_only" formatted="false">仅分析</string>
+    <string name="analyzing" formatted="false">分析中</string>
+    <string name="audio_is_processed_on_your_device_locking_the_screen_or_switching_apps" formatted="false">声音在本机处理。锁屏或切到其他 App 会结束采集并保留结果。每次最长 30 分钟。</string>
+    <string name="cancel" formatted="false">取消</string>
+    <string name="capture_ended" formatted="false">采集结束：%1$s</string>
+    <string name="capture_stopped_because_the_app_closed" formatted="false">应用已关闭，采集已结束</string>
+    <string name="capture_stopped_because_the_app_left_the_foreground" formatted="false">已离开前台，采集已结束</string>
+    <string name="clear_target" formatted="false">清除目标</string>
+    <string name="delete" formatted="false">删除</string>
+    <string name="delete_session" formatted="false">删除会话</string>
+    <string name="delete_this_session" formatted="false">删除此会话？</string>
+    <string name="dismiss_message" formatted="false">关闭提示</string>
+    <string name="expected_a_48_khz_mono_pcm_wav_file" formatted="false">不是 48 kHz 单声道 PCM WAV</string>
+    <string name="export" formatted="false">导出</string>
+    <string name="export_complete" formatted="false">已导出</string>
+    <string name="freeze_display" formatted="false">冻结画面</string>
+    <string name="full_session_waveform_navigator" formatted="false">整段波形导航</string>
+    <string name="go_live" formatted="false">回到实时</string>
+    <string name="hide_waveform_detail" formatted="false">收起振动细节</string>
+    <string name="image_saved" formatted="false">图像已保存</string>
+    <string name="action_import" formatted="false">导入</string>
+    <string name="import_session" formatted="false">导入会话</string>
+    <string name="include_the_full_session_in_the_image" formatted="false">图像使用整段概览</string>
+    <string name="input_settings" formatted="false">采集设置</string>
+    <string name="insufficient" formatted="false">不足</string>
+    <string name="insufficient_storage_space" formatted="false">剩余空间不足</string>
+    <string name="invalid_numeric_value_in_session" formatted="false">会话数值不合法</string>
+    <string name="invalid_playback_data" formatted="false">无效的回放数据</string>
+    <string name="invalid_session_manifest" formatted="false">会话清单不合法</string>
+    <string name="invalid_session_manifest_length" formatted="false">会话清单长度不合法</string>
+    <string name="language" formatted="false">语言</string>
+    <string name="live_last_snapshot" formatted="false">实时／最后快照</string>
+    <string name="microphone_permission_was_denied_allow_access_in_system_settings_then_" formatted="false">麦克风权限未授予，可在系统设置中开启后重试</string>
+    <string name="microphone_read_failed" formatted="false">麦克风读取失败 (%1$s)</string>
+    <string name="more" formatted="false">更多</string>
+    <string name="no_data" formatted="false">无数据</string>
+    <string name="no_saved_sessions_yet" formatted="false">还没有保存的会话</string>
+    <string name="no_session_to_export" formatted="false">没有可导出的会话</string>
+    <string name="no_steady_pitch" formatted="false">无稳定音高</string>
+    <string name="no_steady_pitch_detected" formatted="false">未检测到稳定音高</string>
+    <string name="not_a_supported_pitchsession_file" formatted="false">不是支持的 .pitchsession 文件</string>
+    <string name="pause_playback" formatted="false">暂停回放</string>
+    <string name="piano_audio_output_is_unavailable" formatted="false">钢琴输出不可用</string>
+    <string name="piano_salamander_grand_piano_alexander_holm_cc_by_3_0_pitch_detection_" formatted="false">钢琴：Salamander Grand Piano / Alexander Holm / CC BY 3.0\n音高算法：Pitchy / Ian Johnson / MIT</string>
+    <string name="pitch" formatted="false">音高</string>
+    <string name="pitch_chart_to_25_semitone_lines" formatted="false">音高图，%1$s 至 %2$s，25 条半音线</string>
+    <string name="pitch_display_range" formatted="false">音高显示音域</string>
+    <string name="play_recording" formatted="false">播放录音</string>
+    <string name="play" formatted="false">试听 %1$s</string>
+    <string name="playback_failed_please_try_again" formatted="false">播放失败，请重试</string>
+    <string name="playback_failed" formatted="false">播放失败：%1$s</string>
+    <string name="playback_is_closed" formatted="false">回放已关闭</string>
+    <string name="playback_position" formatted="false">回放位置</string>
+    <string name="quiet_recordings_are_boosted_during_playback_by_up_to_about_24_db_save" formatted="false">回放会自动提升偏小的录音音量，最高约 24 dB。保存的录音、导出的 WAV 和分析图保留原始电平。</string>
+    <string name="ready" formatted="false">准备就绪</string>
+    <string name="recording" formatted="false">录音</string>
+    <string name="reference_piano" formatted="false">参考钢琴</string>
+    <string name="rename" formatted="false">重命名</string>
+    <string name="resume_display" formatted="false">恢复画面</string>
+    <string name="sample_decoding_timed_out_or_returned_no_audio" formatted="false">采样解码超时或为空</string>
+    <string name="save" formatted="false">保存</string>
+    <string name="save_png_image" formatted="false">保存 PNG 图像</string>
+    <string name="save_wav_recording" formatted="false">保存 WAV 录音</string>
+    <string name="save_image" formatted="false">保存图像</string>
+    <string name="save_session_pitchsession" formatted="false">保存完整会话 .pitchsession</string>
+    <string name="saved" formatted="false">已保留</string>
+    <string name="saved_sessions" formatted="false">本机会话</string>
+    <string name="saving_failed_restart_the_app_to_recover_the_last_checkpoint" formatted="false">保存未完成：%1$s；重启后恢复最近落盘数据</string>
+    <string name="saving_interrupted" formatted="false">保存中断：%1$s</string>
+    <string name="saving" formatted="false">正在保存…</string>
+    <string name="session_block_lengths_do_not_match" formatted="false">会话数据块长度不匹配</string>
+    <string name="session_import_failed" formatted="false">会话导入失败：%1$s</string>
+    <string name="session_value_is_out_of_range" formatted="false">会话数值越界</string>
+    <string name="spectrogram" formatted="false">声谱图</string>
+    <string name="spectrum" formatted="false">频谱</string>
+    <string name="spectrum_snapshot_x_hz_y_db" formatted="false">瞬时频谱 · 横轴 Hz · 纵轴 dB</string>
+    <string name="start_recording" formatted="false">开始录音</string>
+    <string name="stop_analysis" formatted="false">结束分析</string>
+    <string name="stop_capture_first" formatted="false">请先结束采集</string>
+    <string name="stop_recording" formatted="false">结束录音</string>
+    <string name="storage_is_too_slow_audio_written_so_far_has_been_retained" formatted="false">存储速度不足，已保留写入部分</string>
+    <string name="system_default_microphone" formatted="false">系统默认麦克风</string>
+    <string name="the_30_minute_limit_has_been_reached" formatted="false">已达到 30 分钟</string>
+    <string name="the_app_left_the_foreground_your_recording_and_analysis_have_been_save" formatted="false">已离开前台，录音和分析已保留</string>
+    <string name="the_input_device_changed_please_start_capture_again" formatted="false">输入设备已改变，请重新开始采集</string>
+    <string name="the_microphone_could_not_start_capture" formatted="false">麦克风未能开始采集</string>
+    <string name="the_microphone_is_in_use_by_the_system_or_another_app" formatted="false">麦克风被系统或其他应用占用</string>
+    <string name="the_previous_capture_was_interrupted_saved_data_has_been_recovered" formatted="false">上次采集意外中断，已恢复落盘数据</string>
+    <string name="the_selected_microphone_disconnected_choose_another_input" formatted="false">所选麦克风已断开，请重新选择</string>
+    <string name="the_session_exceeds_256_mib" formatted="false">会话超过 256 MiB</string>
+    <string name="this_device_cannot_provide_48_khz_mono_pcm_input" formatted="false">设备无法提供 48 kHz 单声道 PCM 输入</string>
+    <string name="unable_to_load_chart_data" formatted="false">图表读取失败：%1$s</string>
+    <string name="unable_to_load_piano_samples" formatted="false">钢琴加载失败：%1$s</string>
+    <string name="unable_to_open_session" formatted="false">打开失败：%1$s</string>
+    <string name="unable_to_play_piano_audio" formatted="false">钢琴播放失败：%1$s</string>
+    <string name="unable_to_save_display_settings" formatted="false">显示设置保存失败：%1$s</string>
+    <string name="unable_to_select_this_microphone" formatted="false">无法选择此麦克风</string>
+    <string name="unable_to_start_capture" formatted="false">无法开始采集</string>
+    <string name="unknown" formatted="false">未知</string>
+    <string name="unsupported_session_version" formatted="false">不支持此会话版本</string>
+    <string name="wav_duration_or_length_does_not_match" formatted="false">WAV 时长或长度不匹配</string>
+    <string name="waiting_for_audio" formatted="false">等待声音</string>
+    <string name="waveform" formatted="false">波形</string>
+    <string name="waveform_detail_ms" formatted="false">振动细节 · 毫秒</string>
+    <string name="x_mm_ss_y_hz_gaps_indicate_missing_analysis" formatted="false">横轴 mm:ss · 纵轴 Hz · 空缺表示没有分析数据</string>
+    <string name="x_mm_ss_y_amplitude_1_to_1" formatted="false">横轴 mm:ss · 纵轴振幅（−1 至 1）</string>
+    <string name="failed" formatted="false">失败</string>
+    <string name="this_removes_the_recording_and_analysis_from_the_app_exported_files_ar" formatted="false">%1$s\n应用内录音和分析将一并删除。已导出的文件不受影响。</string>
+    <string name="chart" formatted="false">%1$s分析图</string>
+    <string name="failed_1249fa" formatted="false">%1$s失败：%2$s</string>
+    <string name="sec" formatted="false">%1$s 秒</string>
+    <string name="hz_echo_cancellation_noise_suppression_automatic_gain_control" formatted="false">%1$s · %2$s Hz\n回声消除：%3$s\n降噪：%4$s\n自动增益：%5$s</string>
+    <string name="system_default_microphone_d1823d" formatted="false">✓ 系统默认麦克风</string>
+</resources>

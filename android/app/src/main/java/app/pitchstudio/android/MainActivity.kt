@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import app.pitchstudio.android.ui.*
 import kotlinx.coroutines.launch
 
@@ -34,14 +36,17 @@ class MainActivity : ComponentActivity() {
             if (it.active) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } }
-        setContent { StudioTheme { StudioScreen(studio, start = { recorded ->
+        setContent {
+            val language = studio.language.collectAsStateWithLifecycle().value
+            val strings = remember(language) { AppStrings(this, language) }
+            CompositionLocalProvider(LocalAppStrings provides strings) { StudioTheme { StudioScreen(studio, start = { recorded ->
             pendingRecord = recorded
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) studio.start(recorded)
             else permission.launch(Manifest.permission.RECORD_AUDIO)
         }, importFile = { open.launch(arrayOf("application/octet-stream", "*/*")) }, export = { kind, whole ->
             val name = "pitch-${System.currentTimeMillis()}"
             when (kind) { "wav" -> wav.launch("$name.wav"); "session" -> session.launch("$name.pitchsession"); "png" -> { wholeImage = whole; png.launch("$name.png") } }
-        }, piano = { PianoReference(studio.state.collectAsStateWithLifecycle().value, studio::playPiano, { studio.target(null) }) }) } }
+        }, piano = { PianoReference(studio.state.collectAsStateWithLifecycle().value, studio::playPiano, { studio.target(null) }) }) } } }
     }
     override fun onStart() { super.onStart(); studio.foreground() }
     override fun onStop() { super.onStop(); if (!isChangingConfigurations) studio.background() }
